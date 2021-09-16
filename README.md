@@ -4,7 +4,7 @@
 
 It is not clear how far on this roadmap I will get
 
-- [ ] Create a function that converts a BNF (regular Isabelle data type) to a MRBNF (binding aware datatype)
+- [x] Create a function that converts a BNF (regular Isabelle data type) to a MRBNF (binding aware datatype)
     - This is needed for the definition of MRBNFs by composition
 
 - [ ] Implement the definition of MRBNFs by composition

@@ -1,0 +1,73 @@
+\chapter{MRBNF Construction}
+
+\section{Parsing of user specification}
+
+\begin{itemize}
+\item{Not clear yet what would be best syntactic format}
+\item{Example on how such a format might look, maybe mention Nominal2?}
+\item{Rather easy after automation of proofs}
+\item{Thus skipped for this thesis}
+\end{itemize}
+
+\section{Definition of a composite type}
+
+\begin{itemize}
+\item{Uses Isabelle's \texttt{typedef}}
+\item{Variables instead of recursion}
+\item{Final version: Generated from the user spec}
+\item{This thesis: Defined by the user}
+\end{itemize}
+
+\section{Definition of the pre-datatype by composition}
+
+\begin{itemize}
+\item{Partly implemented by roshardt~\cite{mrbnf_composition}}
+\end{itemize}
+
+\subsection{Construction of a MRBNF from a type}
+
+\begin{itemize}
+\item{Decend into composite type using recursion}
+\item{if t = type var, then return ID, possibly demoted, see section~\ref{sec:demote}}
+\item{if t = (t1...tn) F is a BNF, convert to MRBNF (see section~\ref{sec:bnf_to_mrbnf}) and go to next step}
+\item{if t = (t1...tn) F is a MRBNF, create MRBNFs for t1...tn by recursion, rearrange vars and compose with F}
+\item{if t = (t1...tn) F else, return DEADID}
+\end{itemize}
+
+\subsection{Conversion from BNF to MRBNF}\label{sec:bnf_to_mrbnf}
+
+\begin{itemize}
+\item{MRBNF is generalization of BNF --> every BNF is a MRBNF}
+\item{Only live and dead variables, no free or bound}
+\end{itemize}
+
+\subsection{Demotion of variables}\label{sec:demote}
+
+\begin{itemize}
+\item{Converts live --> free --> bound --> dead}
+\item{Needed to match vars of multiple MRBNFs during composition}
+\end{itemize}
+
+\subsection{Lifing and Permutation of variables}\label{sec:lift}
+
+\begin{itemize}
+\item{Lift: Add new (unused) variables to the front of the type}
+\item{Used to make multiple MRBNFs have the same number of variables of each type}
+\item{Permute: Change order of variables of a MRBNF}
+\item{Composition needs all variables in the same order for each MRBNF}
+\end{itemize}
+
+\subsection{MRBNF composition}
+
+\begin{itemize}
+\item{Explain how to combine axioms of multiple MRBNFs to one composed MRBNF}
+\end{itemize}
+
+\section{Fixpoint construction of the data type}
+
+\begin{itemize}
+\item{Partly implemented by Stoop~\cite{mrbnf_fixpoint}}
+\item{Use the greatest or least fixpoint of the pre-datatype to obtain a recursive datatype}
+\item{Generates a recursor/corecursor that can be used to write functions}
+\item{Generates an weak induction principle}
+\end{itemize}

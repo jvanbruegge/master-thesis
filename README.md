@@ -1,5 +1,7 @@
 # Binding aware data types for Isabelle/HOL (master's thesis)
 
+The latest PDF of the thesis can be viewed [here](https://github.com/jvanbruegge/master-thesis/releases/download/thesis/thesis.pdf).
+
 ## Roadmap
 
 It is not clear how far on this roadmap I will get

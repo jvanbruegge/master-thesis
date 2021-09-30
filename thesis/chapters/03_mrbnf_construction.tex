@@ -36,10 +36,9 @@
 
 \subsection{Conversion from BNF to MRBNF}\label{sec:bnf_to_mrbnf}
 
-\begin{itemize}
-\item{MRBNF is generalization of BNF --> every BNF is a MRBNF}
-\item{Only live and dead variables, no free or bound}
-\end{itemize}
+As seen in section~\ref{sec:mrbnf_theory}, a \ac{MRBNF} is a generalization of a \ac{BNF}. In particular, a \ac{BNF} is a \ac{MRBNF} that only has live and/or dead variables, neither free nor bound variables. Thus the \ac{MRBNF} axioms can be proven directly from the \ac{BNF} axioms.
+
+In the implementation this is realized by a \texttt{mrbnf\_of\_bnf} function that takes a \ac{BNF} as argument and provides the necessary tactics and definitions to prove the \ac{MRBNF} axioms for the given datatype.
 
 \subsection{Demotion of variables}\label{sec:demote}
 

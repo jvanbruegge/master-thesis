@@ -17,16 +17,26 @@
 \usepackage{graphicx}
 \usepackage{scrhack} % necessary for listings package
 \usepackage{listings}
+\usepackage{stix}
+\usepackage[most]{tcolorbox} %
+\usepackage{inconsolata} %
 \usepackage{lstautogobble}
 \usepackage{tikz}
+\usepackage{float} % Provides H option for figures
 \usepackage{pgfplots}
 \usepackage{pgfplotstable}
 \usepackage{booktabs}
+\usepackage{mathtools}
+\usepackage{semantic} %
 \usepackage[final]{microtype}
 \usepackage{caption}
+\usepackage[printonlyused]{acronym}
 \usepackage[hidelinks]{hyperref} % hidelinks removes colored boxes around references and links
 
-\usepackage{acronym}
+\newcommand{\bnfeq}{\ensuremath{\mathop{{:}{:}{=}}}}
+\newcommand{\bnfor}{\ensuremath{\mathop{|}}}
+\newcommand{\defeq}{\triangleq}
+\DeclareMathSymbol{\dv}{\mathord}{operators}{"3A}
 
 \bibliography{bibliography}
 
@@ -61,9 +71,21 @@
 
 % Settings for lstlistings
 \lstset{%
-  basicstyle=\ttfamily,
+  basicstyle=\footnotesize\ttfamily,
   columns=fullflexible,
   autogobble,
   keywordstyle=\bfseries\color{TUMBlue},
-  stringstyle=\color{TUMAccentGreen}
+  stringstyle=\color{TUMAccentGreen},
+  captionpos=b,
+  commentstyle=\color{TUMAccentGreen}
+}
+
+\definecolor{darkgreen}{HTML}{007000}
+\definecolor{tyvar}{HTML}{9867C5}
+
+\lstdefinelanguage{Isabelle}{
+  keywords={binds, in, binder, and, where},
+  keywordstyle=\color{darkgreen},
+  ndkeywords={atom_decl,nominal_datatype, datatype, typedef},
+  ndkeywordstyle=\color{TUMBlue}
 }

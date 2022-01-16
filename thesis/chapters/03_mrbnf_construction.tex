@@ -1,22 +1,100 @@
 \chapter{MRBNF Construction}
 
+Throughout this chapter we will follow the general procedure to create a \ac{MRBNF} from a user-defined specification. As an example, we will use the types and terms of System F as defined in figure~\ref{fig:systemf_syntax}. Of special interest are the different kinds of binders in System F. In types, we have type variables which are bound with forall. In terms, we have term variables which are bound by normal lambda functions, but also type variables which are bound by big lambdas. For our binding aware data types we have to be able to nest the data type for types in the data type for term while sharing the binding scopes for type variables between the two.
+
+\begin{figure}[H]
+\[
+\begin{array}{rcll}
+\tau, \sigma & \bnfeq &  & \\ %\hspace{-24pt}\text{Types} \\
+& \bnfor & a & \text{Variables} \\
+& \bnfor & \tau_1 \: \tau_2 & \text{Application} \\
+& \bnfor & \tau_1 \to \tau_2 & \text{Function Types} \\
+& \bnfor & \forall a. \: \tau & \text{Polymorphism} \\
+& & & \\
+t, u & \bnfeq & & \\
+& \bnfor & x & \text{Variables} \\
+& \bnfor & t_1 \: t_2 & \text{Application} \\
+& \bnfor & \lambda x\dv\tau. \: t & \text{Abstraction} \\
+& \bnfor & t \: \sigma & \text{Type Application} \\
+& \bnfor & \Lambda a . \: t & \text{Type Abstraction} \\
+\end{array}
+\]
+\caption{Syntax of Types and Terms in System F}
+\label{fig:systemf_syntax}
+\end{figure}
+
 \section{Parsing of user specification}
 
-\begin{itemize}
-\item{Not clear yet what would be best syntactic format}
-\item{Example on how such a format might look, maybe mention Nominal2?}
-\item{Rather easy after automation of proofs}
-\item{Thus skipped for this thesis}
-\end{itemize}
+To provide the user with a high level interface, Isabelle allows to define new custom syntax. In fact, the current (non binding aware) data types that are based on \acp{BNF} are an example of such custom syntax (see listing~\ref{lst:datatype_isabelle}).
 
-\section{Definition of a composite type}
+\begin{minipage}{\textwidth}
+\begin{lstlisting}[
+  language=Isabelle,
+  caption=Defintion of a simple tree data type in Isabelle/HOL,
+  label={lst:datatype_isabelle},
+  otherkeywords={'a},
+  keywordstyle=\color{tyvar}
+]
+datatype 'a tree =
+    Leaf
+  | Node "'a tree" 'a "'a tree"
+\end{lstlisting}
+\end{minipage}
 
-\begin{itemize}
-\item{Uses Isabelle's \texttt{typedef}}
-\item{Variables instead of recursion}
-\item{Final version: Generated from the user spec}
-\item{This thesis: Defined by the user}
-\end{itemize}
+This custom syntax is then transformed internally into a type definition with a single constructor that uses the standard binary sum and product types to represent the user-given data type. Additionally, constructors with no data are replaced by \textit{unit} and the recursive components of the type are replaced with variables. The example above would roughly be translated to the typedef in listing~\ref{lst:pre_datatype} (parenthesis added for clarity).
+
+\begin{minipage}{\textwidth}
+\begin{lstlisting}[
+  language=Isabelle,
+  caption=Defintion of the pre-datatype of a tree,
+  label={lst:pre_datatype},
+  otherkeywords={'a, 'b},
+  keywordstyle=\color{tyvar}
+]
+typedef ('a, 'b) tree_pre_tree = "{ x :: (unit + ('b * ('a * 'b))) . True }"
+\end{lstlisting}
+\end{minipage}
+
+Our binding aware data types should mirror the normal data type definitions, with additional annotation to denote binding relations. These annotations need among other things to be able to deal with deep recursive binders, like in a \textit{let rec} construct. The Nominal2 package~\cite{Nominal2_package} that is currently used to reason about data types with binders, allows to specify a function which extracts the binders from a type. This function is very limited and does not support data types that were not defined in the same mutually recursive group. This forces the user to create a new list type instead of using a normal list of tuples (see listing~\ref{lst:letrec_nominal}).
+
+\begin{lstlisting}[
+  language=Isabelle,
+  caption=Defintion of a simple expression type with recursive lets in Nominal2,
+  label={lst:letrec_nominal}
+]
+atom_decl var
+
+nominal_datatype expr =
+    Var var
+  | Lam "x::var" "t::expr" binds x in t
+  | App "t1::expr" "t2::expr"
+  | Let "as::binder_list" "t::expr" binds bn(as) in t
+  | LetRec "as::binder_list" "t::expr" binds bn(as) in as t
+and binder_list =
+    ANil
+  | ACons var expr binder_list
+binder bn :: "binder_list => atom list" where
+    "bn ANil = []"
+  | "bn (ACons x _ as) = atom x # bn as"
+\end{lstlisting}
+
+Our binding aware data types will not need this auxilliary list type nor the extraction function. As a future addition they can however support non-repetitive binders and more. At the time of writing most of the implementation is still missing, so it is hard to anticipate which syntactic features might be relevant in the future. For this reason this thesis does not choose a specific syntactic format and expects the user to provide the already translated types and the binding relation (see section~\ref{sec:binding relation}). The translation of the example above could look like listing~\ref{lst:binding_pre_datatype}. Note that contrary to Nominal2, variables in our binding aware data types are not specified with an extra command (like \texttt{atom\_decl}), but are a argument to the data type instead.
+
+\begin{lstlisting}[
+  language=Isabelle,
+  caption=Translation of a simple expression type with recursive lets,
+  label={lst:binding_pre_datatype},
+  otherkeywords={'freevar, 'bindervar, 'body, 'rec},
+  keywordstyle=\color{tyvar}
+]
+typedef ('freevar, 'bindervar, 'body, 'rec) expr_pre_expr = "{ x::(
+    'freevar +
+    ('bindervar * 'body) +
+    ('rec * 'rec) +
+    (('bindervar * 'rec) list * 'body) +
+    (('bindervar * 'body) list * 'body)
+  ). True }"
+\end{lstlisting}
 
 \section{Definition of the pre-datatype by composition}
 

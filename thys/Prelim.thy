@@ -1,7 +1,7 @@
 theory Prelim
   imports Card_Prelim
 begin
-  
+
 abbreviation (input) "any \<equiv> undefined"
 
 declare bij_imp_bij_inv[simp]
@@ -17,13 +17,13 @@ lemma bij_imp_bij_betw: "bij f \<Longrightarrow> bij_betw f A (f ` A)"
 lemma bij_bij_betw_inv: "bij u \<Longrightarrow> bij_betw u A B \<Longrightarrow> bij_betw (inv u) B A"
   by (metis bij_betw_imp_inj_on bij_betw_imp_surj_on bij_imp_bij_betw bij_imp_bij_inv image_inv_f_f)
 
-lemma conversep_def: 
+lemma conversep_def:
 "conversep r = (\<lambda> a b. r b a)" by auto
 
 
 lemma bij_comp2: "bij u \<Longrightarrow> bij v \<Longrightarrow> bij (\<lambda>a. v (u a))"
   unfolding o_def[symmetric] using bij_comp by blast
-  
+
 lemma snd_o_is_snd:"snd \<circ> (\<lambda>(x, y). (f0 (x, y), y)) = snd"
   by fastforce
 
@@ -44,7 +44,7 @@ lemma inv_simp2[simp]: "bij u \<Longrightarrow> u (inv u x) = x"
 
 lemma inv_o_simp2[simp]: "bij u \<Longrightarrow> u o inv u = id"
   unfolding o_def by auto
-    
+
 lemma bij_inv_rev: "bij f \<Longrightarrow> a = inv f b \<longleftrightarrow> b = f a"
   by auto
 
@@ -93,10 +93,10 @@ definition imsupp :: "('a \<Rightarrow> 'a) => 'a set" where
 
 lemma supp_id: "supp id = {}"
   unfolding supp_def by auto
- 
+
 lemma imsupp_id: "imsupp id = {}"
   unfolding imsupp_def supp_id by auto
- 
+
 lemma imsupp_id_fun_upd: "imsupp (id(a:=b)) = (if a = b then {} else {a, b})"
   unfolding imsupp_def supp_def by auto
 
@@ -235,36 +235,36 @@ lemmas imsupp_inv_betw_extU = extU[THEN conjunct2, THEN conjunct2,
 
 lemma ex_bij_betw_supp:
   fixes A B C :: "'a set"
-  assumes i: "infinite (UNIV :: 'a set)" and 
+  assumes i: "infinite (UNIV :: 'a set)" and
   bound: "|A| <o |UNIV :: 'a set|"
   and AB: "bij_betw uu A B" and emp: "A \<inter> B = {}" "A \<inter> C = {}" "B \<inter> C = {}"
-shows "EX u. bij u \<and> |supp u| <o |UNIV::'a set| \<and> bij_betw u A B \<and> imsupp u \<inter> C = {} \<and> 
+shows "EX u. bij u \<and> |supp u| <o |UNIV::'a set| \<and> bij_betw u A B \<and> imsupp u \<inter> C = {} \<and>
              eq_on A u uu"
 proof-
-  have abo: "|A| =o |B|" using AB 
+  have abo: "|A| =o |B|" using AB
     using card_of_ordIso by blast
-  hence b2: "|B| <o |UNIV :: 'a set|" using bound   
+  hence b2: "|B| <o |UNIV :: 'a set|" using bound
     using ordIso_ordLess_trans ordIso_symmetric by blast
   define u where "u \<equiv> extU A B uu"
   show ?thesis apply(rule exI[of _ u])
-    using extU[OF AB emp(1), unfolded u_def[symmetric]] apply auto  
-    apply (metis abo bound card_of_Un_infinite card_of_mono1 finite_Un 
+    using extU[OF AB emp(1), unfolded u_def[symmetric]] apply auto
+    apply (metis abo bound card_of_Un_infinite card_of_mono1 finite_Un
 finite_ordLess_infinite2 i ordIso_iff_ordLeq ordLeq_ordLess_trans)
-  using assms by auto 
+  using assms by auto
 qed
 
 lemma ordIso_ex_bij_betw_supp:
   fixes A B C :: "'a set"
-  assumes i: "infinite (UNIV :: 'a set)" and 
+  assumes i: "infinite (UNIV :: 'a set)" and
   bound: "|A| <o |UNIV :: 'a set|"
   and AB: "|A| =o |B|" and emp: "A \<inter> B = {}" "A \<inter> C = {}" "B \<inter> C = {}"
 shows "EX u. bij u \<and> |supp u| <o |UNIV::'a set| \<and> bij_betw u A B \<and> imsupp u \<inter> C = {}"
-proof-   
-  obtain uu where AB: "bij_betw uu A B" 
+proof-
+  obtain uu where AB: "bij_betw uu A B"
     using AB unfolding card_of_ordIso[symmetric] by blast
-  have "EX u. bij u \<and> |supp u| <o |UNIV::'a set| \<and> bij_betw u A B \<and> imsupp u \<inter> C = {} 
+  have "EX u. bij u \<and> |supp u| <o |UNIV::'a set| \<and> bij_betw u A B \<and> imsupp u \<inter> C = {}
     \<and> eq_on A u uu"
-  apply(rule ex_bij_betw_supp) using assms AB by auto 
+  apply(rule ex_bij_betw_supp) using assms AB by auto
   thus ?thesis by auto
 qed
 
@@ -394,9 +394,9 @@ proof -
     by auto
 qed
 
-lemma bij_imsupp_supp_ne: 
+lemma bij_imsupp_supp_ne:
 assumes "bij f" and "supp f \<inter> A = {}"
-shows "imsupp f \<inter> A = {}" 
+shows "imsupp f \<inter> A = {}"
 using assms unfolding imsupp_def apply auto
   by (smt CollectI disjoint_iff_not_equal inv_simp1 supp_def)
 
@@ -523,6 +523,131 @@ lemma infinite_regular_card_order_natLeq:
   unfolding infinite_regular_card_order_def
   by (simp add: natLeq_card_order natLeq_cinfinite regularCard_natLeq)
 
+lemma infinite_regular_card_order_Un: "infinite_regular_card_order r \<Longrightarrow> |A| <o r \<Longrightarrow> |B| <o r \<Longrightarrow> |A \<union> B| <o r"
+  using infinite_regular_card_order.Card_order regularCard_Un infinite_regular_card_order_def
+  by blast
+
+lemma infinite_regular_card_order_ordLess_cprod: "infinite_regular_card_order r \<Longrightarrow> infinite_regular_card_order p \<Longrightarrow> |x| <o r \<Longrightarrow> |x| <o p *c r"
+  using ordLess_ordLeq_trans[OF _ ordLeq_cprod2[OF infinite_regular_card_order.Cnotzero]] infinite_regular_card_order.Card_order
+  by blast
+
+lemma csum_less_mono:
+  assumes Cinfinite: "Cinfinite r" "Cinfinite q"
+  and Card_order: "Card_order r'" "Card_order q'"
+  and less: "r <o r'" "q <o q'"
+shows "r +c q <o r' +c q'"
+proof (cases "r \<le>o q")
+  case True
+  have 1: "r +c q =o q" by (rule csum_absorb2[OF Cinfinite(2) True])
+  have 2: "Cinfinite r'" using cinfinite_mono[OF ordLess_imp_ordLeq[OF less(1)]] Cinfinite(1) Card_order(1) by blast
+  have 3: "q' \<le>o r' +c q'" by (rule ordLeq_csum2[OF Card_order(2)])
+  show ?thesis
+    apply (rule ordIso_ordLess_trans[OF 1])
+    apply (rule ordLess_ordLeq_trans[OF less(2) 3])
+    done
+next
+  case False
+  then have 1: "q \<le>o r" by (simp add: Cinfinite ordLeq_iff_ordLess_or_ordIso)
+  have 2: "r +c q =o r" by (rule csum_absorb1[OF Cinfinite(1) 1])
+  have 3: "Cinfinite q'" using cinfinite_mono[OF ordLess_imp_ordLeq[OF less(2)]] Cinfinite(2) Card_order(2) by blast
+  have 4: "r' \<le>o r' +c q'" by (rule ordLeq_csum1[OF Card_order(1)])
+  show ?thesis
+    apply (rule ordIso_ordLess_trans[OF 2])
+    apply (rule ordLess_ordLeq_trans[OF less(1) 4])
+    done
+qed
+
+corollary cardSuc_leq_csum:
+  assumes Cinfinite: "Cinfinite r" "Cinfinite q"
+  and Card_order: "Card_order r" "Card_order q"
+shows "cardSuc (r +c q) \<le>o cardSuc r +c cardSuc q"
+  unfolding csum_def
+  apply (rule cardSuc_least[OF card_of_Card_order card_of_Card_order])
+  unfolding csum_def[symmetric]
+  by (rule csum_less_mono[OF Cinfinite cardSuc_Card_order[OF Card_order(1)] cardSuc_Card_order[OF Card_order(2)]
+      cardSuc_greater[OF Card_order(1)] cardSuc_greater[OF Card_order(2)]])
+
+corollary cardSuc_leq_csum_ifco:
+  assumes "infinite_regular_card_order r" "infinite_regular_card_order q"
+  shows "cardSuc (r +c q) \<le>o cardSuc r +c cardSuc q"
+  by (rule cardSuc_leq_csum[OF
+    infinite_regular_card_order.Cinfinite[OF assms(1)] infinite_regular_card_order.Cinfinite[OF assms(2)]
+    infinite_regular_card_order.Card_order[OF assms(1)] infinite_regular_card_order.Card_order[OF assms(2)]
+  ])
+
+lemma cprod_less_mono:
+  assumes Cinfinite: "Cinfinite r" "Cinfinite q"
+  and Card_order: "Card_order r" "Card_order q" "Card_order r'" "Card_order q'"
+  and less: "r <o r'" "q <o q'"
+shows "r *c q <o r' *c q'"
+proof (cases "r \<le>o q")
+  case True
+  have 1: "r *c q =o q" by (rule cprod_infinite2'[OF Cinfinite_Cnotzero[OF Cinfinite(1)] Cinfinite(2) True])
+  have 2: "Cinfinite r'" using cinfinite_mono[OF ordLess_imp_ordLeq[OF less(1)]] Cinfinite(1) Card_order(3) by blast
+  have 3: "q' \<le>o r' *c q'" by (rule ordLeq_cprod2[OF Cinfinite_Cnotzero[OF 2] Card_order(4)])
+  show ?thesis
+    apply (rule ordIso_ordLess_trans[OF 1])
+    apply (rule ordLess_ordLeq_trans[OF less(2) 3])
+    done
+next
+  case False
+  then have 1: "q \<le>o r" by (simp add: Cinfinite ordLeq_iff_ordLess_or_ordIso)
+  have 2: "r *c q =o r" by (rule cprod_infinite1'[OF Cinfinite(1) Cinfinite_Cnotzero[OF Cinfinite(2)] 1])
+  have 3: "Cinfinite q'" using cinfinite_mono[OF ordLess_imp_ordLeq[OF less(2)]] Cinfinite(2) Card_order(4) by blast
+  have 4: "r' \<le>o r' *c q'" by (rule ordLeq_cprod1[OF Card_order(3) Cinfinite_Cnotzero[OF 3]])
+  show ?thesis
+    apply (rule ordIso_ordLess_trans[OF 2])
+    apply (rule ordLess_ordLeq_trans[OF less(1) 4])
+    done
+qed
+
+corollary cardSuc_leq_cprod:
+  assumes Cinfinite: "Cinfinite r" "Cinfinite q"
+  and Card_order: "Card_order r" "Card_order q"
+shows "cardSuc (r *c q) \<le>o cardSuc r *c cardSuc q"
+  unfolding cprod_def
+  apply (rule cardSuc_least[OF card_of_Card_order card_of_Card_order])
+  unfolding cprod_def[symmetric]
+  by (rule cprod_less_mono[OF Cinfinite Card_order
+      cardSuc_Card_order[OF Card_order(1)] cardSuc_Card_order[OF Card_order(2)]
+      cardSuc_greater[OF Card_order(1)] cardSuc_greater[OF Card_order(2)]])
+
+corollary cardSuc_leq_cprod_ifco:
+  assumes "infinite_regular_card_order r" "infinite_regular_card_order q"
+  shows "cardSuc (r *c q) \<le>o cardSuc r *c cardSuc q"
+  by (rule cardSuc_leq_cprod[OF
+    infinite_regular_card_order.Cinfinite[OF assms(1)] infinite_regular_card_order.Cinfinite[OF assms(2)]
+    infinite_regular_card_order.Card_order[OF assms(1)] infinite_regular_card_order.Card_order[OF assms(2)]
+  ])
+
+lemma infinite_regular_card_order_Un_csum:
+  assumes irco: "infinite_regular_card_order r"
+                "infinite_regular_card_order r1"
+                "infinite_regular_card_order r2"
+       and lhs: "|x1| <o r *c r1"
+       and rhs: "|x2| <o r *c r2"
+  shows "|x1 \<union> x2| <o r *c (r1 +c r2)"
+proof -
+  have co_lhs: "infinite_regular_card_order (r *c r1)"
+    by (rule infinite_regular_card_order_cprod[OF irco(1,2)])
+  have lhs': "|x1| <o r *c r1 +c r *c r2"
+    by (rule ordLess_ordLeq_trans[OF lhs ordLeq_csum1[OF infinite_regular_card_order.Card_order[OF co_lhs]]])
+  have lhs_dis: "|x1| <o r *c (r1 +c r2)"
+    by (rule ordLess_ordIso_trans[OF lhs' cprod_csum_distrib1])
+
+  have co_rhs: "infinite_regular_card_order (r *c r2)"
+    by (rule infinite_regular_card_order_cprod[OF irco(1,3)])
+  have rhs': "|x2| <o r *c r1 +c r *c r2"
+    by (rule ordLess_ordLeq_trans[OF rhs ordLeq_csum2[OF infinite_regular_card_order.Card_order[OF co_rhs]]])
+  have rhs_dis: "|x2| <o r *c (r1 +c r2)"
+    by (rule ordLess_ordIso_trans[OF rhs' cprod_csum_distrib1])
+
+  have co: "infinite_regular_card_order (r *c (r1 +c r2))"
+    by (rule infinite_regular_card_order_cprod[OF irco(1) infinite_regular_card_order_csum[OF irco(2,3)]])
+  show ?thesis
+    by (rule infinite_regular_card_order_Un[OF co lhs_dis rhs_dis])
+qed
+
 typedef 'a suc = "Field (cardSuc |UNIV :: 'a set| )"
   using Field_cardSuc_not_empty by auto
 
@@ -572,5 +697,8 @@ lemma card_suc_greater: "card_order r \<Longrightarrow> r <o card_suc r"
 
 lemma card_suc_greater_set: "\<lbrakk> card_order r ; A \<le>o r \<rbrakk> \<Longrightarrow> A <o card_suc r"
   using card_suc_greater ordLeq_ordLess_trans by blast
+
+lemma exists_univ_eq: "\<And>x y. (x = y) = (\<exists>z. z \<in> UNIV \<and> z = x \<and> z = y)"
+  by simp
 
 end

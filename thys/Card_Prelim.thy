@@ -10,24 +10,10 @@ proof(rule card_of_ordIsoI)
     using assms unfolding bij_betw_def inj_on_def by auto
 qed
 
-lemma infinite_card_of_minus:
-  assumes i: "infinite A" and b: "|B| <o |A|" and bi: "B \<subseteq> A"
-  shows "|A - B| =o |A|"
-proof-
-  {assume "|A - B| <o |A|"
-    hence "|(A - B) <+> B| <o |A|" using b card_of_Plus_ordLess_infinite[OF i] by auto
-    moreover have "|A| \<le>o |(A - B) <+> B|"
-      using card_of_Un_Plus_ordLeq[of "A - B" B] bi by (metis Diff_partition Un_commute)
-    ultimately have False using not_ordLess_ordLeq by blast
-  }
-  moreover have  "|A - B| \<le>o |A|" by (simp add: Diff_subset)
-  ultimately show ?thesis using ordLeq_iff_ordLess_or_ordIso by blast
-qed
-
 lemma infinite_UNIV_card_of_minus:
   assumes i: "infinite (UNIV::'a set)" and b: "|B::'a set| <o |UNIV::'a set|"
   shows "|UNIV - B| =o |UNIV::'a set|"
-  using infinite_card_of_minus[OF assms] by auto
+  using card_of_Un_diff_infinite[OF assms] by auto
 
 lemma regularCard_Un:
 assumes "Card_order r" and "cinfinite r" and "regularCard r"
@@ -40,12 +26,12 @@ assumes "Card_order r" "cinfinite r" "regularCard r"
 and "|I| <o r" "\<And>i. i \<in> I \<Longrightarrow> |A i| <o r"
 shows "|\<Union>i\<in>I. A i| <o r"
   using assms cinfinite_def regularCard_stable stable_UNION by blast
- 
+
 lemma cardSuc_ordLeq_pow:
-  assumes "Card_order (k:: 'b rel)"  
+  assumes "Card_order (k:: 'b rel)"
   shows "cardSuc k \<le>o |UNIV:: 'b set set|"
 by (intro cardSuc_least) (auto simp : assms cardSuc_ordLess_ordLeq)
-    
+
 lemma regularCard_ordIso:
 assumes  "k =o k'" and "Cinfinite k" and "regularCard k"
 shows "regularCard k'"
@@ -59,7 +45,7 @@ qed
 lemma regularCard_cardSuc: "Cinfinite k \<Longrightarrow> regularCard (cardSuc k)"
   by (rule infinite_cardSuc_regularCard) (auto simp: cinfinite_def)
 
-lemma bij_card_of_ordIso: 
+lemma bij_card_of_ordIso:
   assumes "bij f" shows "|f ` A| =o |A|"
 proof-
   have "bij_betw f A (f ` A)" using assms unfolding bij_def bij_betw_def inj_on_def surj_def by auto
@@ -78,5 +64,8 @@ lemma type_definition_card_UNIV:
   assumes "type_definition Rep Abs A"
   shows " |A| =o |UNIV :: 'a set|"
   by (rule card_of_ordIsoI[OF type_definition_bij_betw_Abs[OF assms]])
+
+lemma Cinfinite_card_trans: "Cinfinite r \<Longrightarrow> r \<le>o |q| \<Longrightarrow> Cinfinite |q|"
+  using cinfinite_mono card_of_Card_order by blast
 
 end

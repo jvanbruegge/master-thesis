@@ -24,6 +24,11 @@ sig
     pred_set: Proof.context -> tactic,
     wit: Proof.context -> tactic
   }
+  type class_thms = {
+    var_large: thm,
+    var_regular: thm,
+    covar_large: thm
+  }
 
   val morph_mrbnf: morphism -> mrbnf -> mrbnf
   val morph_mrbnf_defs: morphism -> mrbnf -> mrbnf
@@ -32,11 +37,12 @@ sig
   val mrbnf_of: Proof.context -> string -> mrbnf option
   val mrbnf_of_global: theory -> string -> mrbnf option
   val mrbnf_of_bnf: BNF_Def.bnf -> local_theory -> (mrbnf * local_theory)
+  val as_mrbnf: string -> local_theory -> (mrbnf * local_theory) option
   val mrbnf_interpretation: string -> (mrbnf -> local_theory -> local_theory) -> theory -> theory
   val interpret_mrbnf: (string -> bool) -> mrbnf -> local_theory -> local_theory
   val register_mrbnf_raw: string -> mrbnf -> local_theory -> local_theory
   val register_mrbnf: (string -> bool) -> string -> mrbnf -> local_theory -> local_theory
-  val register_bnf_as_mrbnf: BNF_Def.bnf -> local_theory -> local_theory
+  val register_bnf_as_mrbnf: string option -> BNF_Def.bnf -> local_theory -> (mrbnf * local_theory)
 
   datatype var_type = Live_Var | Bound_Var | Free_Var | Dead_Var; (*Added Dead_Var for kill function*)
 
@@ -150,6 +156,8 @@ sig
   val wit_thms_of_mrbnf: mrbnf -> thm list
   val wit_thmss_of_mrbnf: mrbnf -> thm list list
 
+  val class_thms_of_mrbnf: mrbnf -> class_thms
+
   val var_large_of_mrbnf: mrbnf -> thm
   val var_regular_of_mrbnf: mrbnf -> thm
   val natLeq_bound_of_mrbnf: mrbnf -> thm
@@ -215,18 +223,19 @@ sig
   val print_mrbnfs: Proof.context -> unit
   val prepare_def: inline_policy -> (Proof.context -> fact_policy) -> bool ->
     (binding -> binding) -> (Proof.context -> 'a -> typ) -> (Proof.context -> 'b -> term) ->
-    typ list option -> (sort * sort) option -> binding -> binding -> binding -> binding list ->
+    typ list option -> ((sort * thm * thm) * (sort * (sort * local_theory -> thm))) option -> binding -> binding -> binding -> binding list ->
     ((((((binding * 'a) * 'b) * (var_type * 'b) list) * 'b) * 'b list) * 'b option) * 'b option ->
     Proof.context ->
     string * term list * ((Proof.context -> thm list -> tactic) option * term list list) *
     ((thm list -> thm list list) -> thm list list -> Proof.context -> mrbnf * local_theory) *
     local_theory * thm list
   val define_mrbnf_consts: inline_policy -> fact_policy -> bool -> typ list option ->
-    (sort * sort) option -> binding -> binding -> binding -> binding list ->
+    ((sort * thm * thm) * (sort * (sort * local_theory -> thm))) option -> binding -> binding -> binding -> binding list ->
     ((((((binding * typ) * term) * (var_type * term) list) * term) * term list) * term option)
     * term option -> local_theory ->
-      ((typ list * typ list * typ list * typ * string list *
-         (thm -> local_theory -> string list * local_theory)) *
+      ((typ list * typ list * typ list * typ *
+        (string list * thm * thm) *
+         ((thm -> local_theory -> string list * local_theory) * (string list * local_theory -> thm))) *
        (term * term list * term * (int list * term) list * term * term) *
        (thm * thm list * thm * thm list * thm * thm) *
        ((typ list -> typ list -> typ list -> term) *
@@ -239,7 +248,7 @@ sig
 
   val mrbnf_def: inline_policy -> (Proof.context -> fact_policy) -> bool -> (binding -> binding) ->
     mrbnf_def_tactics -> typ list option ->
-    (sort * sort) option -> binding -> binding -> binding -> binding list ->
+    ((sort * thm * thm) * (sort * (sort * local_theory -> thm))) option -> binding -> binding -> binding -> binding list ->
     ((((((binding * typ) * term) * (var_type * term) list) * term) * term list) * term option) * term option ->
     local_theory -> mrbnf * local_theory
   val mrbnf_cmd: (((((((binding * string) * string) * (var_type * string) list) * string)
@@ -317,6 +326,12 @@ fun map_axioms f {map_id0, map_comp0, map_cong0, set_map0, bd_infinite_regular_c
     pred_set = f pred_set};
 
 val morph_axioms = map_axioms o Morphism.thm;
+
+type class_thms = {
+  var_large: thm,
+  var_regular: thm,
+  covar_large: thm
+}
 
 type defs = {
   map_def: thm,
@@ -700,6 +715,7 @@ datatype mrbnf = MRBNF of {
   sets: term list,
   bd: term,
   class: sort,
+  class_thms: class_thms,
   coclass: sort,
   axioms: axioms,
   defs: defs,
@@ -731,6 +747,7 @@ val lives_of_mrbnf = #lives o rep_mrbnf;
 val dead_of_mrbnf = #dead o rep_mrbnf;
 val deads_of_mrbnf = #deads o rep_mrbnf;
 val class_of_mrbnf = #class o rep_mrbnf;
+val class_thms_of_mrbnf = #class_thms o rep_mrbnf;
 val coclass_of_mrbnf = #coclass o rep_mrbnf;
 val axioms_of_mrbnf = #axioms o rep_mrbnf;
 val facts_of_mrbnf = #facts o rep_mrbnf;
@@ -925,26 +942,26 @@ val mr_rel_transfer_of_mrbnf = Lazy.force o #mr_rel_transfer o #mr_facts o rep_m
 val mr_set_transfer_of_mrbnf = Lazy.force o #mr_set_transfer o #mr_facts o rep_mrbnf;
 val mr_rel_id_of_mrbnf = Lazy.force o #mr_rel_id o #mr_facts o rep_mrbnf;
 
-fun mk_mrbnf name T var_types free frees bound bounds live lives lives' dead deads map sets bd class coclass axioms
+fun mk_mrbnf name T var_types free frees bound bounds live lives lives' dead deads map sets bd class class_thms coclass axioms
   defs facts mr_facts wits rel mr_rel pred = MRBNF {name = name, T = T, var_types = var_types,
        free = free, frees = frees, bound = bound, bounds = bounds,
        live = live, lives = lives, lives' = lives', dead = dead, deads = deads,
-       map = map, sets = sets, bd = bd, class = class, coclass = coclass,
+       map = map, sets = sets, bd = bd, class = class, class_thms = class_thms, coclass = coclass,
        axioms = axioms, defs = defs, facts = facts, mr_facts = mr_facts,
        nwits = length wits, wits = wits, rel = rel, mr_rel = mr_rel, pred = pred};
 
-fun map_mrbnf f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12 f13 f14 f15 f16 f17 f18 f19 f20 f21 f22 f23 f24 f25
+fun map_mrbnf f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12 f13 f14 f15 f16 f17 f18 f19 f20 f21 f22 f23 f24 f25 f26
   (MRBNF {name = name, T = T, var_types = var_types, free = free, frees = frees, bound = bound, bounds = bounds,
   live = live, lives = lives, lives' = lives',
-  dead = dead, deads = deads, map = map, sets = sets, bd = bd, class = class, coclass = coclass,
+  dead = dead, deads = deads, map = map, sets = sets, bd = bd, class = class, class_thms = class_thms, coclass = coclass,
   axioms = axioms, defs = defs, facts = facts, mr_facts = mr_facts,
   nwits = nwits, wits = wits, rel = rel, mr_rel = mr_rel, pred = pred}) =
   MRBNF {name = f1 name, T = f2 T, var_types = var_types,
        free = f3 free, frees = f4 frees, bound = f5 bound, bounds = f6 bounds,
        live = f7 live, lives = f8 lives, lives' = f9 lives', dead = f10 dead, deads = f11 deads,
-       map = f12 map, sets = f13 sets, bd = f14 bd, class = f15 class, coclass = f16 coclass,
-       axioms = f17 axioms, defs = f18 defs, facts = f19 facts, mr_facts = f20 mr_facts,
-       nwits = f21 nwits, wits = f22 wits, rel = f23 rel, mr_rel = f24 mr_rel, pred = f25 pred};
+       map = f12 map, sets = f13 sets, bd = f14 bd, class = f15 class, class_thms = f16 class_thms, coclass = f17 coclass,
+       axioms = f18 axioms, defs = f19 defs, facts = f20 facts, mr_facts = f21 mr_facts,
+       nwits = f22 nwits, wits = f23 wits, rel = f24 rel, mr_rel = f25 mr_rel, pred = f26 pred};
 
 fun morph_mrbnf phi =
   let
@@ -952,13 +969,13 @@ fun morph_mrbnf phi =
     val tphi = Morphism.term phi;
   in
     map_mrbnf (Morphism.binding phi) Tphi I (map Tphi) I (map Tphi) I (map Tphi) (map Tphi) I
-      (map Tphi) tphi (map tphi) tphi I I (morph_axioms phi) (morph_defs phi) (morph_facts phi)
+      (map Tphi) tphi (map tphi) tphi I I I (morph_axioms phi) (morph_defs phi) (morph_facts phi)
       (morph_mr_facts phi) I (map (morph_witness phi)) tphi tphi tphi
   end;
 
-fun morph_mrbnf_defs phi = map_mrbnf I I I I I I I I I I I I I I I I I (morph_defs phi) I I I I I I I;
+fun morph_mrbnf_defs phi = map_mrbnf I I I I I I I I I I I I I I I I I I (morph_defs phi) I I I I I I I;
 
-fun permute_deads perm = map_mrbnf I I I I I I I I I I perm I I I I I I I I I I I I I I;
+fun permute_deads perm = map_mrbnf I I I I I I I I I I perm I I I I I I I I I I I I I I I;
 
 val transfer_mrbnf = morph_mrbnf o Morphism.transfer_morphism;
 
@@ -1616,11 +1633,15 @@ fun define_mrbnf_consts const_policy fact_policy internal Ds_opt classes_opt map
         (Morphism.term phi mrbnf_bd_term);
     val mrbnf_bd_raw =  mk_mrbnf_bd Calpha_params_raw;
 
-    val (class, mk_covar_type_class, lthy) = case classes_opt of
-        SOME (class, coclass) => (class, K (pair coclass), lthy)
+    val ((class, var_large, var_regular), (mk_covar_type_class, mk_covar_large), lthy) = case classes_opt of
+        SOME (x, (coclass, mk_covar_large)) => (x, (K (pair coclass), mk_covar_large), lthy)
       | NONE =>
         let
           val (class, lthy) = define_var_type_class (mk_prefix_binding var_typeN) mrbnf_bd_raw lthy;
+          val var_large = get_class_assumption class var_type_class_ass1N lthy
+          val var_regular = get_class_assumption class var_type_class_ass2N lthy
+          val mk_covar_large = fn (coclass, lthy) => get_class_assumption coclass var_type_class_ass1N lthy
+
           val ((wit_covar_name, wit_covar_def), lthy) =
             let
               val term = mk_csum (mk_Field mrbnf_bd_raw
@@ -1647,7 +1668,7 @@ fun define_mrbnf_consts const_policy fact_policy internal Ds_opt classes_opt map
                 (mk_mr_instance_proof_tac wit_covar_def (SOME bd_Card_order)) lthy;
             in (coclass, lthy) end;
         in
-          (class, mk_covar_type_class, lthy)
+          ((class, var_large, var_regular), (mk_covar_type_class, mk_covar_large), lthy)
         end;
 
     val (alphas, betas, Calpha, Calpha_params, mrbnf_map) =
@@ -1797,7 +1818,7 @@ fun define_mrbnf_consts const_policy fact_policy internal Ds_opt classes_opt map
     fun mk_pred_spec Ds' As' =
       Term.subst_atomic_types ((Ds ~~ Ds') @ (As ~~ As')) pred_spec;
   in
-    (((alphas, betas, deads, Calpha, class, mk_covar_type_class),
+    (((alphas, betas, deads, Calpha, (class, var_large, var_regular), (mk_covar_type_class, mk_covar_large)),
      (mrbnf_map, mrbnf_sets, mrbnf_bd, mrbnf_wits, mrbnf_rel, mrbnf_pred),
      (mrbnf_map_def, mrbnf_set_defs, mrbnf_bd_def, mrbnf_wit_defs, mrbnf_rel_def, mrbnf_pred_def),
      (mk_mrbnf_map, mk_mrbnf_t, mk_mrbnf_T, mk_mrbnf_rel, mk_mrbnf_pred, mk_rel_spec,
@@ -1848,7 +1869,7 @@ fun prepare_def const_policy mk_fact_policy internal qualify prep_typ prep_term 
       else
         (mrbnf_b, Local_Theory.full_name no_defs_lthy mrbnf_b);
 
-    val (((alphas, betas, deads, Calpha, class, mk_covar_type_class),
+    val (((alphas, betas, deads, Calpha, (class, var_large_raw, var_regular), (mk_covar_type_class, mk_covar_large)),
      (mrbnf_map, mrbnf_sets, mrbnf_bd, mrbnf_wits, mrbnf_rel, mrbnf_pred),
      (mrbnf_map_def, mrbnf_set_defs, mrbnf_bd_def, mrbnf_wit_defs, mrbnf_rel_def, mrbnf_pred_def),
      (mk_mrbnf_map_Ds, mk_mrbnf_t_Ds, mk_mrbnf_T_Ds, _, _, mk_rel_spec, mk_pred_spec)), lthy) =
@@ -2085,18 +2106,19 @@ fun prepare_def const_policy mk_fact_policy internal qualify prep_typ prep_term 
         val (coclass, lthy) = mk_covar_type_class bd_Card_order lthy;
 
         val var_large =
-          let
-            val var_large_raw = get_class_assumption class var_type_class_ass1N lthy;
-          in
             @{thm ordIso_ordLeq_trans} OF [@{thm ordIso_symmetric} OF
-              [@{thm card_of_Field_ordIso} OF [bd_Card_order]], var_large_raw]
-          end;
-        val var_regular = get_class_assumption class var_type_class_ass2N lthy;
+              [@{thm card_of_Field_ordIso} OF [bd_Card_order]], var_large_raw];
 
-        val covar_large = get_class_assumption coclass var_type_class_ass1N lthy;
+        val covar_large = mk_covar_large (coclass, lthy)
         val natLeq_bound = @{thm ordLeq_ordLess_trans} OF [@{thm natLeq_ordLeq_cinfinite} OF
           [conjI OF [bd_cinfinite, bd_Card_order]]] OF [@{thm ordLess_ordLeq_trans} OF
           [@{thm cardSuc_greater} OF [bd_Card_order], covar_large]];
+
+        val class_thms = {
+          var_large = var_large_raw,
+          var_regular = var_regular,
+          covar_large = covar_large
+        };
 
         val UNIV_cinfinite =
           let
@@ -2822,7 +2844,7 @@ fun prepare_def const_policy mk_fact_policy internal qualify prep_typ prep_term 
           in
             Goal.prove_sorry lthy vars prem_terms_fs goal (fn {context = ctxt, prems = assms} =>
               mk_mr_rel_map_non_lives_tac ctxt live assms id_thms rel_OO_Grp
-                (Lazy.force rel_OO_Grp_id) (Lazy.force map_comp) exI_z)
+                (Lazy.force rel_OO_Grp_id) (Lazy.force map_id) (Lazy.force map_comp) exI_z)
             |> Thm.close_derivation \<^here>
           end;
 
@@ -3344,7 +3366,7 @@ fun prepare_def const_policy mk_fact_policy internal qualify prep_typ prep_term 
 
         val mrbnf = mk_mrbnf mrbnf_b Calpha
           var_types free frees bound bounds live lives lives' dead deads
-          mrbnf_map mrbnf_sets mrbnf_bd class coclass axioms defs facts mr_facts wits
+          mrbnf_map mrbnf_sets mrbnf_bd class class_thms coclass axioms defs facts mr_facts wits
           mrbnf_rel mrbnf_mr_rel mrbnf_pred;
 
 (*val _ = map (@{print} o Lazy.force) ([mr_rel_eq, mr_le_rel_OO, mr_in_rel, mr_rel_OO,
@@ -3436,9 +3458,15 @@ fun mrbnf_of_bnf bnf lthy =
     infinite_regular_card_order = fn ctxt => EVERY (map (HEADGOAL o resolve_tac ctxt o single) [@{thm infinite_regular_card_order_card_suc}, BNF_Def.bd_card_order_of_bnf bnf, BNF_Def.bd_Cinfinite_of_bnf bnf]),
     set_bd = map (fn thm => fn ctxt => EVERY (map (HEADGOAL o resolve_tac ctxt o single) [@{thm card_suc_greater_set}, BNF_Def.bd_card_order_of_bnf bnf, thm])) (BNF_Def.set_bd_of_bnf bnf),
     le_rel_OO = fn ctxt => HEADGOAL (resolve_tac ctxt [BNF_Def.le_rel_OO_of_bnf bnf]),
-    in_rel = fn ctxt => Local_Defs.unfold_tac ctxt [@{thm OO_Grp_alt}, BNF_Def.map_id_of_bnf bnf, BNF_Def.in_rel_of_bnf bnf, @{thm Set.mem_Collect_eq}] THEN HEADGOAL (resolve_tac ctxt [@{thm refl}]),
+    in_rel = fn ctxt => Local_Defs.unfold_tac ctxt [@{thm OO_Grp_alt}, BNF_Def.map_id_of_bnf bnf] THEN FIRST [
+        HEADGOAL (resolve_tac ctxt [@{thm exists_univ_eq}]),
+        Local_Defs.unfold_tac ctxt [BNF_Def.in_rel_of_bnf bnf, @{thm Set.mem_Collect_eq}] THEN HEADGOAL (resolve_tac ctxt [@{thm refl}])
+      ],
     pred_set = fn ctxt => HEADGOAL (resolve_tac ctxt [BNF_Def.pred_set_of_bnf bnf]),
-    wit = fn ctxt => EVERY (map (HEADGOAL o eresolve_tac ctxt o single) (BNF_Def.wit_thms_of_bnf bnf))
+    wit = fn ctxt => FIRST [
+        HEADGOAL (assume_tac ctxt),
+        EVERY (map (HEADGOAL o eresolve_tac ctxt o single) (BNF_Def.wit_thms_of_bnf bnf))
+      ]
   }
   fun mk_sucT T = Type (\<^type_name>\<open>suc\<close>, [T])
   fun mk_card_suc r =
@@ -3461,7 +3489,25 @@ fun mrbnf_of_bnf bnf lthy =
     lthy'
   end;
 
-fun register_bnf_as_mrbnf bnf = mrbnf_of_bnf bnf #> uncurry (register_mrbnf_raw (Binding.name_of (BNF_Def.name_of_bnf bnf)))
+fun register_bnf_as_mrbnf key bnf lthy =
+  let val (mrbnf, lthy') = mrbnf_of_bnf bnf lthy
+      val name = (case key of
+        SOME name => name
+        | NONE => fst (dest_Type (BNF_Def.T_of_bnf bnf))
+      )
+      val lthy'' = register_mrbnf_raw name mrbnf lthy'
+  in (mrbnf, lthy'')
+  end;
+
+fun as_mrbnf name lthy' =
+  (case mrbnf_of lthy' name of
+    SOME mrbnf => SOME (mrbnf, lthy')
+    | NONE =>
+      (case BNF_Def.bnf_of lthy' name of
+        SOME bnf => SOME (register_bnf_as_mrbnf NONE bnf lthy')
+        | NONE => NONE
+      )
+  )
 
 fun mrbnf_cmd (raw_csts, raw_plugins) =
   (fn (key, goals, (triv_tac_opt, wit_goalss), after_qed, lthy, defs) =>

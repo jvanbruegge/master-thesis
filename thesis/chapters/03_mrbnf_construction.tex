@@ -1,6 +1,6 @@
 \chapter{MRBNF Construction}
 
-Throughout this chapter we will follow the general procedure to create a \ac{MRBNF} from a user-defined specification. As an example, we will use the types and terms of System F as defined in figure~\ref{fig:systemf_syntax}. Of special interest are the different kinds of binders in System F. In types, we have type variables which are bound with forall. In terms, we have term variables which are bound by normal lambda functions, but also type variables which are bound by big lambdas. For our binding aware data types we have to be able to nest the data type for types in the data type for term while sharing the binding scopes for type variables between the two.
+Throughout this chapter we will follow the general procedure to create a \ac{MRBNF} from a user-defined specification. As an example, we will use the types and terms of System F as defined in figure~\ref{fig:systemf_syntax}. As deep recursive binders are of special interest, we extend the syntax to include \textit{let rec}. Another interesting point are the different kinds of binders in System F. In types, we have type variables which are bound with forall. In terms, we have term variables which are bound by normal lambda functions, but also type variables which are bound by big lambdas. For our binding aware data types we have to be able to nest the data type for types in the data type for term while sharing the binding scopes for type variables between the two.
 
 \begin{figure}[H]
 \[
@@ -17,6 +17,7 @@ t, u & \bnfeq & & \\
 & \bnfor & \lambda x\dv\tau. \: t & \text{Abstraction} \\
 & \bnfor & t \: \sigma & \text{Type Application} \\
 & \bnfor & \Lambda a . \: t & \text{Type Abstraction} \\
+& \bnfor & \texttt{let} \: \overline{x = t} \: \texttt{in} \: u & \text{Recursive Let} \\
 \end{array}
 \]
 \caption{Syntax of Types and Terms in System F}
@@ -41,7 +42,7 @@ datatype 'a tree =
 \end{lstlisting}
 \end{minipage}
 
-This custom syntax is then transformed internally into a type definition with a single constructor that uses the standard binary sum and product types to represent the user-given data type. Additionally, constructors with no data are replaced by \textit{unit} and the recursive components of the type are replaced with variables. The example above would roughly be translated to the typedef in listing~\ref{lst:pre_datatype} (parenthesis added for clarity).
+This custom syntax is then transformed internally into a type definition with a single constructor that uses the standard binary sum and product types to represent the user-given data type. Additionally, constructors with no data are replaced by \textit{unit} and the recursive components of the type are replaced with variables. The example above would be translated to the type in listing~\ref{lst:pre_datatype}.
 
 \begin{minipage}{\textwidth}
 \begin{lstlisting}[
@@ -51,72 +52,86 @@ This custom syntax is then transformed internally into a type definition with a 
   otherkeywords={'a, 'b},
   keywordstyle=\color{tyvar}
 ]
-typedef ('a, 'b) tree_pre_tree = "{ x :: (unit + ('b * ('a * 'b))) . True }"
+unit
++ ('b * 'a * 'b)
 \end{lstlisting}
 \end{minipage}
 
-Our binding aware data types should mirror the normal data type definitions, with additional annotation to denote binding relations. These annotations need among other things to be able to deal with deep recursive binders, like in a \textit{let rec} construct. The Nominal2 package~\cite{Nominal2_package} that is currently used to reason about data types with binders, allows to specify a function which extracts the binders from a type. This function is very limited and does not support data types that were not defined in the same mutually recursive group. This forces the user to create a new list type instead of using a normal list of tuples (see listing~\ref{lst:letrec_nominal}).
+Our binding aware data types should mirror the normal data type definitions, with additional annotation to denote binding relations. The fundamental approach of using \acp{MRBNF} allows us to delay the definition of such a syntax until after the rest of the contruction is implemented. This allows to mold the syntax to the final set of supported features instead of having to try to anticipate them in advance. Taking inspiration from Nominal2~\cite{nominal2}, for the terms of our System F example it might look similar to this:
 
 \begin{lstlisting}[
   language=Isabelle,
-  caption=Defintion of a simple expression type with recursive lets in Nominal2,
-  label={lst:letrec_nominal}
+  caption=Possible syntax for binding aware data types,
+  label={lst:syntax_binder_datatype},
+  literate=
+    {@var@}{\textcolor{tyvar}{'var}}{1}
+    {@tyvar@}{\textcolor{tyvar}{'tyvar}}{1}
 ]
-atom_decl var
-
-nominal_datatype expr =
-    Var var
-  | Lam "x::var" "t::expr" binds x in t
-  | App "t1::expr" "t2::expr"
-  | Let "as::binder_list" "t::expr" binds bn(as) in t
-  | LetRec "as::binder_list" "t::expr" binds bn(as) in as t
-and binder_list =
-    ANil
-  | ACons var expr binder_list
-binder bn :: "binder_list => atom list" where
-    "bn ANil = []"
-  | "bn (ACons x _ as) = atom x # bn as"
+binder_datatype (@var@, @tyvar@) term =
+    Var @var@
+  | App term term
+  | Lam x::@var@ "@tyvar@ ty" t::term binds x in t
+  | TyApp term "@tyvar@ ty"
+  | TyLam a::@tyvar@ t::term binds a in t
+  | Let "((xs::@var@) * (ts::term)) list" t::term binds xs in ts t
 \end{lstlisting}
 
-Our binding aware data types will not need this auxilliary list type nor the extraction function. As a future addition they can however support non-repetitive binders and more. At the time of writing most of the implementation is still missing, so it is hard to anticipate which syntactic features might be relevant in the future. For this reason this thesis does not choose a specific syntactic format and expects the user to provide the already translated types and the binding relation (see section~\ref{sec:binding relation}). The translation of the example above could look like listing~\ref{lst:binding_pre_datatype}. Note that contrary to Nominal2, variables in our binding aware data types are not specified with an extra command (like \texttt{atom\_decl}), but are a argument to the data type instead.
+This syntax would be translated to the type in listing~\ref{lst:binding_type}. For every variable type, a second type variable is introduced to stand in for the bound variables (\texttt{\textcolor{tyvar}{'bvar}} for \texttt{\textcolor{tyvar}{'var}} and \texttt{\textcolor{tyvar}{'btyvar}} for \texttt{\textcolor{tyvar}{'tyvar}}). The recursive components are replaced with one of two variables depending if a variable is bound in the recursive part (\texttt{\textcolor{tyvar}{'body}}) or not (\texttt{\textcolor{tyvar}{'rec}}). These extra variables are required for the \ac{MRBNF} fixpoint (see chapter~\ref{sec:fixpoint}). In this thesis, we do not implement this translation and expect the user to provide the type directly.
 
 \begin{lstlisting}[
   language=Isabelle,
-  caption=Translation of a simple expression type with recursive lets,
-  label={lst:binding_pre_datatype},
-  otherkeywords={'freevar, 'bindervar, 'body, 'rec},
+  caption=Translation of the term binder data type of System F,
+  label={lst:binding_type},
+  otherkeywords={'var, 'tyvar, 'bvar, 'btyvar, 'body, 'rec},
   keywordstyle=\color{tyvar}
 ]
-typedef ('freevar, 'bindervar, 'body, 'rec) expr_pre_expr = "{ x::(
-    'freevar +
-    ('bindervar * 'body) +
-    ('rec * 'rec) +
-    (('bindervar * 'rec) list * 'body) +
-    (('bindervar * 'body) list * 'body)
-  ). True }"
+'var
++ ('rec * 'rec)
++ ('bvar * 'tyvar ty * 'body)
++ ('rec * 'tyvar ty)
++ ('btyvar * 'body)
++ (('bvar * 'body) list * 'body)
 \end{lstlisting}
 
-\section{Definition of the pre-datatype by composition}
+\section{Proof of the \ac{MRBNF} axioms by composition}
+
+The construction of the fixpoint requires that the provided type is a \ac{MRBNF}. To prove the axioms, the user-provided type is divided into individual pieces and composed back together according to this algorithm:
+
+\begin{algorithm}
+\caption{Recursive construction of a composed \ac{MRBNF} from a type}\label{alg:mrbnf_of_typ}
+\begin{algorithmic}[1]
+\Function{MRBNF\_of\_typ}{$t$}
+  \If{$t = \text{Var}('x)$}
+    \State $\textit{var\_type}\gets label('x)$ \Comment{\textcolor{darkgreen}{is $'x$ Live, Free, Bound or Dead?}}
+    \State \Return $\textit{demote}([\textit{var\_type}], \text{ID\_mrbnf}('x))$
+  \ElsIf{$t = (t_1,...,t_n) G \: \textbf{and} \: G \: \text{is a MRBNF}$}
+    \State $F_1,...,F_n\gets \Call{MRBNF\_of\_typ}{t_1},...,\Call{MRBNF\_of\_typ}{t_n}$
+    \State \Return $\textit{compose\_mrbnf}(G, [F_1,...,F_n])$
+  \ElsIf{$t = (t_1,...,t_n) G \: \textbf{and} \: G \: \text{is a BNF}$}
+    \State $\textit{mrbnf\_of\_bnf}(G)$ \Comment{\textcolor{darkgreen}{Convert G to a MRBNF and register it for future use}}
+    \State \Return \Call{MRBNF\_of\_typ}{$(t_1,...,t_n) G$}
+  \Else
+    \State \Return $\text{DEADID\_mrbnf}(t)$ \Comment{\textcolor{red}{TODO: ask Dmitriy what is really going on here}}
+  \EndIf
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+Here, \textit{demote} refers to the function explained in section~\ref{sec:demote}, \textit{compose\_mrbnf} to the composition pipeline explained in section~\ref{sec:composition} and \textit{mrbnf\_of\_bnf} to the conversion function in section~\ref{sec:conversion}. In our example type from earlier (listing~\ref{lst:binding_type}) this composition would convert the product type \texttt{(*)}, the sum type \texttt{(+)} and the \texttt{list} type to \acp{MRBNF} and wrap every variable with the \text{ID\_mrbnf} demoted using the labels \texttt{Free\_Var} for \cvar{'var} and \cvar{'tyvar}, \texttt{Bound\_Var} for \cvar{'bvar} and \cvar{'btyvar}, and \texttt{Live\_Var} for \cvar{'body} and \cvar{'rec} (as the variable of \text{ID\_mrbnf} is already a live variable, demoting it to \texttt{Live\_Var} does nothing).
+
+\subsection{Conversion from BNF to MRBNF}\label{sec:conversion}
+
+As seen in section~\ref{sec:mrbnf_theory}, \acp{MRBNF} are a generalization of \acp{BNF}. This means every \ac{BNF} is also a \ac{MRBNF} that only has live and dead variables, no free or bound variables. The function \textit{mrbnf\_of\_bnf} provides the tactics that prove the \ac{MRBNF} axioms from the \ac{BNF} axioms.
+
+One notable change that has to be done is the bound. The \textit{set\_bd} \ac{BNF} axiom requires that the set returned by the set functions is smaller or equal to the cardinal bound (see equation~\ref{eq:bnf_set_bd} in section~\ref{sec:theory}). The \ac{MRBNF} axioms require a strictly smaller set than the cardinal bound, so we cannot simply use the same cardinal for the \ac{MRBNF} as for the \ac{BNF}. Because of this, \textit{mrbnf\_of\_bnf} uses the successor cardinal as bound.
+
+\subsection{\ac{MRBNF} composition}\label{sec:composition}
+
+To compose multiple \acp{MRBNF} together, we need to prove the \ac{MRBNF} axioms of the combined type given the axioms of the individual components. For example, the type \texttt{\cvar{'a} ID\_mrbnf + \cvar{'a} list}
 
 \begin{itemize}
-\item{Partly implemented by roshardt~\cite{mrbnf_composition}}
+\item{Complex case --> easy case}
 \end{itemize}
-
-\subsection{Construction of a MRBNF from a type}
-
-\begin{itemize}
-\item{Decend into composite type using recursion}
-\item{if t = type var, then return ID, possibly demoted, see section~\ref{sec:demote}}
-\item{if t = (t1...tn) F is a BNF, convert to MRBNF (see section~\ref{sec:bnf_to_mrbnf}) and go to next step}
-\item{if t = (t1...tn) F is a MRBNF, create MRBNFs for t1...tn by recursion, rearrange vars and compose with F}
-\item{if t = (t1...tn) F else, return DEADID}
-\end{itemize}
-
-\subsection{Conversion from BNF to MRBNF}\label{sec:bnf_to_mrbnf}
-
-As seen in section~\ref{sec:mrbnf_theory}, a \ac{MRBNF} is a generalization of a \ac{BNF}. In particular, a \ac{BNF} is a \ac{MRBNF} that only has live and/or dead variables, neither free nor bound variables. Thus the \ac{MRBNF} axioms can be proven directly from the \ac{BNF} axioms.
-
-In the implementation this is realized by a \texttt{mrbnf\_of\_bnf} function that takes a \ac{BNF} as argument and provides the necessary tactics and definitions to prove the \ac{MRBNF} axioms for the given datatype.
 
 \subsection{Demotion of variables}\label{sec:demote}
 
@@ -134,7 +149,7 @@ In the implementation this is realized by a \texttt{mrbnf\_of\_bnf} function tha
 \item{Composition needs all variables in the same order for each MRBNF}
 \end{itemize}
 
-\subsection{MRBNF composition}
+\subsection{MRBNF composition}\label{sec:clean_composition}
 
 \begin{itemize}
 \item{Explain how to combine axioms of multiple MRBNFs to one composed MRBNF}

@@ -33,6 +33,10 @@
 \usepackage[printonlyused]{acronym}
 \usepackage[hidelinks]{hyperref} % hidelinks removes colored boxes around references and links
 
+% My packages
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
 \newcommand{\bnfeq}{\ensuremath{\mathop{{:}{:}{=}}}}
 \newcommand{\bnfor}{\ensuremath{\mathop{|}}}
 \newcommand{\defeq}{\triangleq}
@@ -86,6 +90,8 @@
 \lstdefinelanguage{Isabelle}{
   keywords={binds, in, binder, and, where},
   keywordstyle=\color{darkgreen},
-  ndkeywords={atom_decl,nominal_datatype, datatype, typedef},
+  ndkeywords={atom_decl,nominal_datatype, datatype, binder_datatype, typedef},
   ndkeywordstyle=\color{TUMBlue}
 }
+
+\newcommand\cvar[1]{\textcolor{tyvar}{\texttt{#1}}}

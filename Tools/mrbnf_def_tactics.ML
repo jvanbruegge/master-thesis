@@ -22,13 +22,13 @@ sig
   val mk_mr_map_cong_tac: Proof.context -> int -> thm -> tactic
 
   val mk_mr_rel_Grp_tac: Proof.context -> thm list -> thm -> thm -> thm list -> thm -> thm ->
-    thm -> tactic
+    thm -> thm list -> tactic
   val mk_mr_rel_eq_tac: Proof.context -> int -> thm -> thm -> thm -> tactic
   val mk_mr_le_rel_OO_tac: Proof.context -> int -> thm list -> thm -> (thm list -> thm) ->
-    thm -> thm -> tactic
-  val mk_mr_rel_OO_tac: Proof.context -> thm list -> thm -> thm -> thm -> (cterm -> thm list) ->
+    thm -> thm -> thm -> tactic
+  val mk_mr_rel_OO_tac: Proof.context -> thm list -> thm list -> thm -> thm -> thm -> (cterm -> thm list) ->
     thm list -> thm -> thm list -> thm -> tactic
-  val mk_mr_rel_conversep_tac: Proof.context -> thm list -> thm -> thm -> thm -> thm list ->
+  val mk_mr_rel_conversep_tac: Proof.context -> thm list -> thm list -> thm list -> thm list -> thm -> thm -> thm -> thm list ->
     thm -> (cterm -> thm) -> (cterm -> thm) -> tactic
   val mk_mr_rel_map0_tac: Proof.context -> int -> thm -> thm -> thm -> thm -> tactic
   val mk_mr_rel_map_non_lives_tac: Proof.context -> int -> thm list -> thm list -> thm -> thm -> thm -> thm ->
@@ -37,11 +37,11 @@ sig
   val mk_mr_rel_map_right_tac: Proof.context -> thm list -> thm -> thm -> tactic
   val mk_mr_rel_map_right_bij_tac: Proof.context -> thm list -> thm -> thm -> thm -> thm -> tactic
   val mk_mr_rel_mono_tac: Proof.context -> thm list * thm list -> thm -> tactic
-  val mk_mr_rel_mono_strong0_tac: Proof.context -> thm list -> thm list -> thm -> thm -> tactic
+  val mk_mr_rel_mono_strong0_tac: Proof.context -> thm list -> thm list -> thm list -> thm -> thm -> tactic
 
   val mk_mr_map_transfer_tac: Proof.context -> int -> int -> thm -> thm -> thm list -> thm -> tactic
   val mk_mr_rel_transfer_tac: Proof.context -> int -> (bool -> thm list) -> tactic
-  val mk_mr_set_transfer_tac: Proof.context -> thm list -> thm -> thm list -> tactic
+  val mk_mr_set_transfer_tac: Proof.context -> thm list -> thm list -> thm -> thm list -> tactic
 end;
 
 structure MRBNF_Def_Tactics : MRBNF_DEF_TACTICS =
@@ -87,7 +87,7 @@ fun mk_mr_instance_proof_tac wit_covar_def bd_Card_order_opt ctxt = Class.intro_
 fun mk_mr_map_cong_tac ctxt num_prems cong0 =
   (hyp_subst_tac ctxt THEN' rtac ctxt cong0 THEN'
    REPEAT_DETERM_N (2 * num_prems) o assume_tac ctxt THEN'
-   REPEAT_DETERM o (dtac ctxt meta_spec THEN' etac ctxt meta_mp THEN' assume_tac ctxt)) 1;
+   REPEAT_DETERM o (etac ctxt @{thm emptyE} ORELSE' dtac ctxt meta_spec THEN' etac ctxt meta_mp THEN' assume_tac ctxt)) 1;
 
 fun mk_mr_inj_map_tac ctxt n the_inv_thms the_inv_o_thms id_thms map_id map_comp map_cong0 map_cong =
   let
@@ -118,14 +118,83 @@ fun mk_mr_collect_set_map_tac ctxt num_prems set_map0s =
     REPEAT_DETERM_N num_prems o assume_tac ctxt) set_map0s) THEN'
   rtac ctxt @{thm image_empty}) 1;
 
-fun mk_mr_rel_Grp_tac ctxt assms mr_rel_OO_Grp_alt map_comp set_map map_cong0 map_id0 exI_inst =
-  simp_only_plus ctxt (mr_rel_OO_Grp_alt :: map_comp :: set_map @ assms @
-      @{thms fun_eq_iff Grp_def supp_id_bound bij_id o_id o_apply fst_conv snd_conv id_apply})
-    [eresolve_tac ctxt [exE, conjE, CollectE, @{thm case_prodE}],
-      hyp_subst_tac ctxt, dtac ctxt set_mp THEN' assume_tac ctxt,
-      resolve_tac ctxt [allI, iffI, conjI, ballI, UNIV_I, @{thm image_subsetI}, CollectI,
-      @{thm case_prodI}, map_cong0, trans OF [map_cong0, fun_cong OF [map_id0]] RS
-        (trans OF [@{thm _}, id_apply]), exI_inst]] |> HEADGOAL;
+fun mk_mr_rel_Grp_tac ctxt assms mr_rel_OO_Grp_alt map_comp set_map map_cong0 map_id0 exI_inst id_prems =
+  let
+    val map_comp' = map_comp OF (id_prems @ assms)
+    val map_comp_id = map_comp OF (id_prems @ id_prems)
+    val set_map_id = map (fn thm => thm OF id_prems) set_map
+    val mr_rel_OO_Grp_alt' = mr_rel_OO_Grp_alt OF assms
+    val map_cong0' = map_cong0 OF (assms @ assms)
+  in
+    unfold_thms_tac ctxt @{thms fun_eq_iff} THEN
+    HEADGOAL (rtac ctxt @{thm allI} THEN' rtac ctxt @{thm allI}) THEN
+    unfold_thms_tac ctxt [mr_rel_OO_Grp_alt', @{thm Grp_def}, @{thm mem_Collect_eq}] THEN
+    EVERY1 [
+      rtac ctxt @{thm iffI},
+      etac ctxt @{thm exE},
+      REPEAT_DETERM o etac ctxt @{thm conjE},
+      hyp_subst_tac ctxt,
+      rtac ctxt @{thm conjI}
+    ] THEN
+    unfold_thms_tac ctxt [map_comp', @{thm o_id}, @{thm empty_subset_conj}] THEN
+    HEADGOAL (
+      rtac ctxt map_cong0' THEN_ALL_NEW (
+        etac ctxt @{thm emptyE} ORELSE'
+        rtac ctxt refl ORELSE'
+        (EVERY' [
+          dtac ctxt set_mp,
+          assume_tac ctxt,
+          SELECT_GOAL (unfold_thms_tac ctxt @{thms mem_Collect_eq o_apply}),
+          etac ctxt @{thm case_prodE},
+          etac ctxt @{thm conjE},
+          hyp_subst_tac ctxt,
+          SELECT_GOAL (unfold_thms_tac ctxt @{thms fst_conv snd_conv}),
+          rtac ctxt refl
+        ])
+      )
+    ) THEN
+    unfold_thms_tac ctxt (map_id0 :: set_map_id) THEN
+    REPEAT_DETERM (EVERY1 [
+      TRY o rtac ctxt conjI,
+      rtac ctxt @{thm image_subsetI},
+      dtac ctxt set_mp,
+      assume_tac ctxt,
+      etac ctxt @{thm CollectE},
+      etac ctxt @{thm case_prodE},
+      etac ctxt @{thm conjE},
+      hyp_subst_tac ctxt,
+      SELECT_GOAL (unfold_thms_tac ctxt @{thms fst_conv}),
+      assume_tac ctxt
+    ] ORELSE (
+      SELECT_GOAL (unfold_thms_tac ctxt @{thms id_def}) 1 THEN
+      assume_tac ctxt 1
+    )) THEN
+    EVERY1 [
+      REPEAT_DETERM o etac ctxt @{thm conjE},
+      hyp_subst_tac ctxt,
+      (rtac ctxt @{thm ex_UNIV_id} THEN' assume_tac ctxt) ORELSE' rtac ctxt exI_inst
+    ] THEN
+    IF_UNSOLVED (
+      unfold_thms_tac ctxt set_map_id THEN
+      REPEAT_DETERM (
+        EVERY1 (
+          map (rtac ctxt) @{thms conjI image_subsetI CollectI case_prodI conjI refl}
+          @ [dtac ctxt set_mp, assume_tac ctxt, assume_tac ctxt]
+        )
+      ) THEN
+      HEADGOAL (rtac ctxt conjI) THEN
+      HEADGOAL (rtac ctxt (trans OF [map_comp_id])) THEN
+      unfold_thms_tac ctxt @{thms o_id} THEN
+      unfold_thms_tac ctxt (map_id0 :: @{thms comp_def fst_conv id_def[symmetric]}) THEN
+      HEADGOAL (
+        SELECT_GOAL (unfold_thms_tac ctxt @{thms id_def}) THEN'
+        rtac ctxt refl
+      ) THEN
+      unfold_thms_tac ctxt [map_comp', map_comp_id, @{thm o_id}] THEN
+      unfold_thms_tac ctxt @{thms comp_def snd_conv} THEN
+      HEADGOAL (rtac ctxt refl)
+    )
+  end;
 
 fun mk_mr_rel_eq_tac ctxt n rel_Grp rel_cong map_id0 =
   (EVERY' (rtac ctxt (rel_cong RS trans) :: replicate n (rtac ctxt @{thm eq_alt})) THEN'
@@ -146,15 +215,39 @@ fun mk_mr_rel_map0_tac ctxt live rel_compp rel_conversep rel_Grp map_id =
       val ks = 1 upto live;
     in
       Goal.conjunction_tac 1 THEN
-      unfold_thms_tac ctxt [rel_compp, rel_conversep, rel_Grp, @{thm vimage2p_Grp}] THEN
-      TRYALL (EVERY' [rtac ctxt iffI, rtac ctxt @{thm relcomppI}, rtac ctxt @{thm GrpI},
-        resolve_tac ctxt [map_id, refl], rtac ctxt @{thm CollectI},
-        CONJ_WRAP' (K (rtac ctxt @{thm subset_UNIV})) ks, rtac ctxt @{thm relcomppI},
-        assume_tac ctxt, rtac ctxt @{thm conversepI}, rtac ctxt @{thm GrpI},
-        resolve_tac ctxt [map_id, refl], rtac ctxt @{thm CollectI},
+      unfold_thms_tac ctxt [rel_compp, rel_conversep, @{thm vimage2p_Grp}] THEN
+      (* For some reason unfolding rel_Grp fails for some MRBNFS, so we do it manually *)
+      EVERY1 [
+        rtac ctxt sym,
+        rtac ctxt @{thm trans[OF fun_cong[OF fun_cong[OF OO_cong]]]},
+        REPEAT_DETERM o FIRST' [
+          rtac ctxt @{thm OO_cong},
+          rtac ctxt @{thm trans[OF OO_cong]},
+          rtac ctxt rel_Grp,
+          rtac ctxt (@{thm conversep_cong} OF [rel_Grp]),
+          rtac ctxt refl
+        ],
+        rtac ctxt sym
+      ] THEN
+      TRYALL (EVERY' [
+        rtac ctxt iffI,
+        rtac ctxt @{thm relcomppI},
+        rtac ctxt @{thm GrpI},
+        resolve_tac ctxt [map_id, refl],
+        rtac ctxt @{thm CollectI},
+        CONJ_WRAP' (K (rtac ctxt @{thm subset_UNIV})) ks,
+        rtac ctxt @{thm relcomppI},
+        assume_tac ctxt,
+        rtac ctxt @{thm conversepI},
+        rtac ctxt @{thm GrpI},
+        resolve_tac ctxt [map_id, refl],
+        rtac ctxt @{thm CollectI},
         CONJ_WRAP' (K (rtac ctxt @{thm subset_UNIV})) ks,
         REPEAT_DETERM o eresolve_tac ctxt @{thms relcomppE conversepE GrpE},
-        dtac ctxt (trans OF [sym, map_id]), hyp_subst_tac ctxt, assume_tac ctxt])
+        dtac ctxt (trans OF [sym, map_id]),
+        hyp_subst_tac ctxt,
+        assume_tac ctxt
+      ])
     end;
 
 fun mk_mr_rel_map_non_lives_tac ctxt live assms id_thms rel_OO_Grp rel_OO_Grp_id map_id map_comp exI_z =
@@ -178,6 +271,7 @@ fun mk_mr_rel_map_non_lives_tac ctxt live assms id_thms rel_OO_Grp rel_OO_Grp_id
       assume_tac ctxt
     ]
     THEN unfold_tac ctxt [map_id]
+    THEN TRY (hyp_subst_tac ctxt 1 THEN rtac ctxt refl 1)
     THEN IF_UNSOLVED ([
         safe_tac ctxt,
         HEADGOAL (rtac ctxt (trans OF [@{thm _}, map_comp RS sym])),
@@ -208,92 +302,221 @@ fun mk_mr_rel_mono_tac ctxt (assms1, assms2) mr_rel_OO_Grp_alt =
     simp_only_plus ctxt assms2 [eresolve_tac ctxt [exE, conjE],
       resolve_tac ctxt [exI, conjI, @{thm Collect_case_prod_mono}, subset_trans]]];
 
-fun mk_mr_rel_conversep_tac ctxt assms mr_rel_OO_Grp_alt supp_comp_bound map_comp set_map map_cong0
+fun mk_mr_rel_conversep_tac ctxt assms prems id_prems inv_prems mr_rel_OO_Grp_alt supp_comp_bound map_comp set_map map_cong0
   exI_z1 exI_z2 =
   let
-    val simplify_tac = simp_only_plus ctxt (mr_rel_OO_Grp_alt :: assms @
-        @{thms fun_eq_iff supp_inv_bound bij_imp_bij_inv triv_forall_equality})
-      [eresolve_tac ctxt @{thms exE conjE CollectE case_prodE conversepE}, hyp_subst_tac ctxt,
-        dtac ctxt set_mp THEN' assume_tac ctxt, resolve_tac ctxt @{thms allI iffI conjI ballI
-        UNIV_I conversepI image_subsetI CollectI case_prodI}];
+    fun subgoal_tac exI_z focus = nth (#params focus) 2 |> snd |> exI_z |> rtac ctxt |> HEADGOAL;
+    val map_cong0_id = map_cong0 OF (id_prems @ id_prems)
+    val bij_assms = fold (fn a => fn (b, xs) => if b then (false, xs) else (true, a::xs)) assms (false, [])
+      |> snd |> rev
 
-    fun solve_tac inv_simp = simp_only_plus ctxt ([inv_simp, supp_comp_bound, mr_rel_OO_Grp_alt,
-        map_comp] @ set_map @ assms @ @{thms fun_eq_iff supp_inv_bound bij_imp_bij_inv
-        supp_id_bound bij_id id_o fst_conv snd_conv o_apply bij_comp id_apply mem_Collect_eq
-        split_beta conversep_iff})
-      [resolve_tac ctxt [conjI, UNIV_I, @{thm image_subsetI}, ballI, map_cong0],
-        dtac ctxt set_mp THEN' assume_tac ctxt];
-
-    fun subgoal_tac exI_z focus = hd (#params focus) |> snd |> exI_z |> rtac ctxt |> HEADGOAL;
+    fun map_tac exI_z ps map_comp_prems inv_o =
+      let
+        val set_map' = map (fn thm => thm OF ps) set_map
+        val map_comp' = map_comp OF (ps @ id_prems)
+        val map_cong0' = map_cong0 OF (ps @ ps)
+      in
+        EVERY1 [
+          etac ctxt @{thm exE},
+          REPEAT_DETERM o etac ctxt @{thm conjE},
+          hyp_subst_tac ctxt,
+          Subgoal.FOCUS_PARAMS (subgoal_tac exI_z) ctxt
+        ] THEN
+        unfold_thms_tac ctxt (map_comp' :: @{thm id_o} :: set_map') THEN
+        REPEAT_DETERM (EVERY1 [
+          rtac ctxt conjI,
+          FIRST' [
+            rtac ctxt @{thm empty_subsetI},
+            rtac ctxt @{thm UNIV_I},
+            EVERY' [
+              rtac ctxt @{thm image_subsetI},
+              rtac ctxt @{thm CollectI},
+              dtac ctxt set_mp,
+              assume_tac ctxt,
+              SELECT_GOAL (unfold_thms_tac ctxt @{thms conversep_iff mem_Collect_eq triv_forall_equality split_paired_all prod.case}),
+              assume_tac ctxt
+            ]
+          ]
+        ]) THEN
+        (EVERY1 [
+          rtac ctxt conjI,
+          rtac ctxt map_cong0' THEN_ALL_NEW
+            (rtac ctxt refl ORELSE' rtac ctxt @{thm snd_fst_flip[symmetric]}),
+          TRY o rtac ctxt (trans OF [map_comp OF map_comp_prems])
+        ]) THEN
+        unfold_thms_tac ctxt (map (fn bij => inv_o OF [bij]) bij_assms) THEN
+        HEADGOAL (
+          rtac ctxt map_cong0_id THEN_ALL_NEW
+            (rtac ctxt refl ORELSE' rtac ctxt @{thm fst_snd_flip[symmetric]})
+        )
+      end;
   in
-    [simplify_tac, Subgoal.FOCUS_PARAMS (subgoal_tac exI_z2) ctxt, solve_tac @{thm inv_simp2},
-      simplify_tac, Subgoal.FOCUS_PARAMS (subgoal_tac exI_z1) ctxt, solve_tac @{thm inv_simp1}]
-      |> EVERY1
+    unfold_thms_tac ctxt @{thms fun_eq_iff} THEN
+    EVERY1 [
+      rtac ctxt @{thm allI},
+      rtac ctxt @{thm allI},
+      rtac ctxt (trans OF [mr_rel_OO_Grp_alt])
+    ] THEN
+    REPEAT_DETERM (EVERY1 [
+        rtac ctxt @{thm supp_inv_bound} ORELSE' rtac ctxt @{thm bij_imp_bij_inv},
+        resolve_tac ctxt assms,
+        TRY o resolve_tac ctxt assms
+    ]) THEN
+    unfold_thms_tac ctxt @{thms conversep_iff} THEN
+    EVERY1 [
+      rtac ctxt sym,
+      rtac ctxt (trans OF [mr_rel_OO_Grp_alt]),
+      REPEAT_DETERM o resolve_tac ctxt assms,
+      rtac ctxt @{thm iffI}
+    ] THEN
+    map_tac exI_z1 prems (prems @ inv_prems) @{thm inv_o_simp1} THEN
+    map_tac exI_z2 inv_prems (inv_prems @ prems) @{thm inv_o_simp2}
   end;
 
-fun mk_mr_le_rel_OO_tac ctxt num_prems assms rmbnf_rel_def mk_mr_map_comp le_rel_OO rel_map =
+fun mk_mr_le_rel_OO_tac ctxt num_prems assms mrbnf_rel_def mk_mr_map_comp le_rel_OO rel_map map_id0 =
   let
-    val map_comp = mk_mr_map_comp assms;
+    val map_comp = Local_Defs.unfold0 ctxt @{thms hidden_id_def} (
+      Local_Defs.unfold0 ctxt @{thms id_hid_o_hid} (mk_mr_map_comp assms)
+    );
   in
-    unfold_tac ctxt [rmbnf_rel_def, map_comp] THEN
-    unfold_tac ctxt [@{thm id_hid_o_hid}] THEN
-    unfold_tac ctxt [@{thm hidden_id_def}, map_comp] THEN
-    unfold_tac ctxt @{thms id_o} THEN
-    ([rtac ctxt @{thm predicate2I}, rtac ctxt (@{thm predicate2D} OF [le_rel_OO]),
-      [etac ctxt @{thm relcomppE}, rtac ctxt @{thm relcomppI},
-        etac ctxt (Drule.rotate_prems ~1 rel_map)] @
-      map (rtac ctxt) (drop num_prems assms) |> TRY oo EVERY', assume_tac ctxt] |> EVERY1)
+    unfold_thms_tac ctxt [mrbnf_rel_def] THEN
+    EVERY1 [
+      rtac ctxt @{thm predicate2I},
+      rtac ctxt (@{thm predicate2D} OF [le_rel_OO]),
+      etac ctxt @{thm relcomppE},
+      rtac ctxt @{thm relcomppI}
+    ] THEN
+    FIRST1 [
+      (* Simple case, no free or bound variables *)
+      EVERY' [
+        assume_tac ctxt,
+        SELECT_GOAL (unfold_thms_tac ctxt [map_id0] THEN unfold_thms_tac ctxt @{thms id_def}),
+        assume_tac ctxt
+      ],
+      (* At least one bound or free variable *)
+      EVERY' [
+        SELECT_GOAL (EVERY [
+          unfold_thms_tac ctxt @{thms id_hid_o_hid},
+          unfold_thms_tac ctxt @{thms hidden_id_def},
+          unfold_thms_tac ctxt [map_comp],
+          unfold_thms_tac ctxt @{thms o_id}
+        ]),
+        etac ctxt (Drule.rotate_prems ~1 rel_map) THEN_ALL_NEW (resolve_tac ctxt assms),
+        assume_tac ctxt
+      ]
+    ]
   end;
 
-fun mk_mr_rel_OO_tac ctxt assms mr_le_rel_OO mr_rel_OO_Grp_alt supp_comp_bound mk_mr_exIs set_map
+fun mk_mr_rel_OO_tac ctxt assms id_prems mr_le_rel_OO mr_rel_OO_Grp_alt supp_comp_bound mk_mr_exIs set_map
   map_comp someI2_exs map_cong0 =
   let
+    val (f_prems, g_prems) = chop (length assms div 2) assms
+    val comp_prems = map2 (fn f => fn g => case HOLogic.dest_Trueprop (Thm.prop_of f) of
+      Const (\<^const_name>\<open>bij_betw\<close>, _) $ _ $ _ $ _ => @{thm bij_comp} OF [f, g]
+      | _ => supp_comp_bound OF [f, g]
+    ) f_prems g_prems
     fun subgoal_tac focus = rtac ctxt (conjI OF #params focus |> hd |> snd |> mk_mr_exIs) |> HEADGOAL;
-   in
-     EVERY1 [rtac ctxt (@{thm antisym} OF [@{thm predicate2I}, mr_le_rel_OO OF assms]),
-       simp_only_plus ctxt (mr_rel_OO_Grp_alt :: supp_comp_bound :: assms @
-           @{thms bij_comp relcompp_apply triv_forall_equality meta_spec})
-         [eresolve_tac ctxt [exE, conjE], hyp_subst_tac ctxt],
-       rtac ctxt exI,
-       Subgoal.FOCUS_PARAMS subgoal_tac ctxt,
-       simp_only_plus ctxt (set_map @ [supp_comp_bound, map_comp] @ assms @ @{thms supp_id_bound
-           bij_id o_id id_o o_apply fst_conv snd_conv bij_comp prod.case relcompp_apply[symmetric]})
-         [resolve_tac ctxt (map_cong0 :: someI2_exs),
-           eresolve_tac ctxt [CollectE, @{thm case_prodE}, exE, conjE],
-           dtac ctxt @{thm set_mp} THEN' assume_tac ctxt,
-           resolve_tac ctxt (@{thms conjI image_subsetI CollectI ballI UNIV_I}),
-           hyp_subst_tac ctxt]]
+    fun cong_tac ps = HEADGOAL (
+      rtac ctxt (map_cong0 OF (ps @ ps)) THEN'
+      (REPEAT_DETERM o (rtac ctxt refl ORELSE' (
+        SELECT_GOAL (unfold_thms_tac ctxt @{thms comp_def split_paired_all prod.case fst_conv snd_conv}) THEN'
+        rtac ctxt refl
+      ))));
+    fun map_tac ps comp_prems =
+      unfold_thms_tac ctxt (map (fn thm => thm OF ps) set_map) THEN
+      REPEAT_DETERM (
+        rtac ctxt conjI 1 THEN
+        (rtac ctxt @{thm UNIV_I} 1 ORELSE
+        EVERY1 [
+          rtac ctxt @{thm image_subsetI},
+          dtac ctxt set_mp,
+          assume_tac ctxt,
+          etac ctxt @{thm CollectE},
+          rtac ctxt @{thm CollectI}
+        ]) THEN
+        unfold_thms_tac ctxt @{thms split_paired_all prod.case} THEN
+        TRY (EVERY1 [
+          etac ctxt @{thm relcomppE},
+          resolve_tac ctxt someI2_exs,
+          rtac ctxt exI,
+          rtac ctxt conjI,
+          assume_tac ctxt,
+          assume_tac ctxt,
+          etac ctxt conjE,
+          assume_tac ctxt
+        ]
+      )) THEN
+      unfold_thms_tac ctxt [@{thm id_o}, @{thm o_id}, map_comp OF (ps @ id_prems), map_comp OF comp_prems] THEN
+      HEADGOAL (rtac ctxt conjI) THEN
+      cong_tac ps;
+  in
+    HEADGOAL (
+      rtac ctxt (@{thm antisym} OF [@{thm predicate2I}, mr_le_rel_OO OF assms])
+    ) THEN
+    unfold_thms_tac ctxt (@{thm relcompp_apply} :: map (fn ps => mr_rel_OO_Grp_alt OF ps) [f_prems, g_prems, comp_prems]) THEN
+    EVERY1 [
+      etac ctxt exE,
+      REPEAT_DETERM o etac ctxt conjE,
+      hyp_subst_tac ctxt
+    ] THEN
+    unfold_thms_tac ctxt @{thms triv_forall_equality empty_subset_conj} THEN
+    EVERY1 [
+      rtac ctxt exI,
+      Subgoal.FOCUS_PARAMS subgoal_tac ctxt
+    ] THEN
+    map_tac id_prems (id_prems @ f_prems) THEN
+    map_tac f_prems assms THEN
+    IF_UNSOLVED (cong_tac comp_prems)
   end;
 
-fun mk_mr_rel_mono_strong0_tac ctxt assms set_map map_cong mr_rel_OO_Grp_alt =
+fun mk_mr_rel_mono_strong0_tac ctxt assms id_prems set_map map_cong mr_rel_OO_Grp_alt =
   let
-    fun ballE_subgoal_tac focus =
-      let
-        val ctxt = #context focus;
-        val z = #params focus |> hd |> snd;
-        val is_prod = Thm.term_of z |> fastype_of |> try HOLogic.dest_prodT |> is_some;
-        val ballEs = map (infer_instantiate' ctxt [NONE, NONE, SOME z]) (if is_prod then
-          @{thms ballE[of _ _ "fst x" for x] ballE[of _ _ "snd x" for x]} else @{thms ballE});
-      in
-        simp_only_plus ctxt [] [rtac ctxt imageI, assume_tac ctxt,
-          eresolve_tac ctxt (@{thms impE notE} @ ballEs), rtac ctxt sym] |> HEADGOAL
-      end;
-    fun exI_subgoal_tac focus =
-      let
-        val ctxt = #context focus;
-        val z = #params focus |> hd |> snd;
-        val exI_z = infer_instantiate' ctxt [NONE, SOME z] @{thm exI};
-      in
-        simp_only_plus ctxt (assms @ set_map @
-            @{thms supp_id_bound bij_id image_id id_apply split_beta})
-          [resolve_tac ctxt ([conjI, exI_z, map_cong] @ @{thms subsetI CollectI}),
-            dtac ctxt set_mp THEN' assume_tac ctxt, etac ctxt CollectE, assume_tac ctxt,
-            Subgoal.FOCUS_PARAMS ballE_subgoal_tac ctxt] |> HEADGOAL
-      end;
+   fun bspec_subgoal_tac {context,params,...} =
+     EVERY1 [
+       rtac context sym,
+       rtac context (
+         infer_instantiate' context [NONE, NONE, SOME (snd (nth params 1))] @{thm bspec}
+       ),
+       assume_tac context,
+       assume_tac context
+     ];
+   fun exI_subgoal_tac {context,params,...} =
+     HEADGOAL (rtac context (
+       infer_instantiate' context [NONE, (SOME o snd o hd) params] @{thm exI}
+     ));
+   val (f_prems, g_prems) = chop (length assms div 2) assms
+   val set_map' = filter (fn thm => case (fst o HOLogic.dest_eq o HOLogic.dest_Trueprop o Thm.prop_of) thm of
+      Const (\<^const_name>\<open>Orderings.bot_class.bot\<close>, _) => false
+      | _ => true
+    ) (maps (fn thm => [thm OF id_prems, thm OF f_prems]) set_map)
   in
-    EVERY1 [simp_only_tac ctxt (mr_rel_OO_Grp_alt :: assms), REPEAT_DETERM o FIRST'
-      [eresolve_tac ctxt @{thms exE conjE}, hyp_subst_tac ctxt],
-        Subgoal.FOCUS_PARAMS exI_subgoal_tac ctxt]
+    unfold_thms_tac ctxt (map (fn ps => mr_rel_OO_Grp_alt OF ps) [f_prems, g_prems]) THEN
+    EVERY1 [
+      etac ctxt exE,
+      REPEAT_DETERM o etac ctxt conjE,
+      hyp_subst_tac ctxt,
+      Subgoal.FOCUS_PARAMS exI_subgoal_tac ctxt
+    ] THEN
+    unfold_thms_tac ctxt (@{thms ball_empty image_id id_apply} @ set_map') THEN
+    HEADGOAL (REPEAT_DETERM o etac ctxt @{thm TrueE}) THEN
+    REPEAT_DETERM (EVERY1 [
+      rtac ctxt conjI,
+      rtac ctxt @{thm empty_subsetI} ORELSE' (EVERY' [
+        rtac ctxt @{thm rel_subset_imp},
+        assume_tac ctxt,
+        assume_tac ctxt
+      ])
+    ]) THEN
+    EVERY1 [
+      rtac ctxt conjI,
+      rtac ctxt refl,
+      rtac ctxt (map_cong OF (g_prems @ f_prems)),
+      REPEAT_DETERM o FIRST' [
+        rtac ctxt refl,
+        etac ctxt @{thm emptyE},
+        Subgoal.FOCUS_PARAMS bspec_subgoal_tac ctxt
+      ]
+    ]
   end;
 
 fun mk_mr_rel_transfer_tac ctxt live mk_mr_trans_theorems =
@@ -352,12 +575,44 @@ fun mk_mr_map_transfer_tac ctxt non_dead num_prems rel_mono in_rel set_maps map_
           REPEAT_DETERM_N (4*num_prems) o assume_tac ctxt) @{thms fst_convol snd_convol})])
   end;
 
-fun mk_mr_set_transfer_tac ctxt assms mr_rel_OO_Grp_alt set_map =
-  unfold_tac ctxt ((mr_rel_OO_Grp_alt OF assms) :: @{thms rel_fun_def rel_set_def Bex_def Grp_def})
-  THEN (simp_only_plus ctxt
-    (set_map @ assms @ @{thms supp_id_bound bij_id id_apply image_id fst_conv snd_conv})
-    [resolve_tac ctxt @{thms impI ballI UNIV_I allI conjI conjunctionI imageI},
-      eresolve_tac ctxt @{thms exE conjE imageE CollectE case_prodE}, hyp_subst_tac ctxt,
-      dtac ctxt @{thm set_mp} THEN' assume_tac ctxt, rtac ctxt exI] |> HEADGOAL);
-
+fun mk_mr_set_transfer_tac ctxt assms id_prems mr_rel_OO_Grp_alt set_map =
+  let
+    val set_map' = maps (fn thm => [thm OF assms, thm OF id_prems]) set_map
+  in
+    unfold_thms_tac ctxt ((mr_rel_OO_Grp_alt OF assms) :: @{thms rel_fun_def rel_set_def Bex_def Grp_def}) THEN
+    EVERY1 [
+      REPEAT_DETERM o rtac ctxt allI,
+      rtac ctxt impI,
+      etac ctxt exE,
+      REPEAT_DETERM o etac ctxt conjE,
+      rtac ctxt conjI,
+      FIRST' [
+        rtac ctxt @{thm image_empty[symmetric]},
+        EVERY' [
+          K (unfold_thms_tac ctxt @{thms ball_empty}),
+          rtac ctxt @{thm TrueI},
+          rtac ctxt @{thm TrueI}
+        ],
+        EVERY' [
+          hyp_subst_tac ctxt,
+          SELECT_GOAL (unfold_thms_tac ctxt (@{thm image_id}::set_map')),
+          rtac ctxt refl ORELSE' (EVERY' [
+            rtac ctxt ballI,
+            rtac ctxt @{thm rel_ex_snd},
+            assume_tac ctxt,
+            assume_tac ctxt
+          ])
+        ]
+      ],
+      TRY o rtac ctxt @{thm UNIV_I},
+      IF_UNSOLVED o EVERY' [
+        rtac ctxt ballI,
+        hyp_subst_tac ctxt,
+        SELECT_GOAL (unfold_thms_tac ctxt (@{thm image_id}::set_map')),
+        rtac ctxt @{thm rel_ex_fst},
+        assume_tac ctxt,
+        assume_tac ctxt
+      ]
+    ]
+  end
 end;

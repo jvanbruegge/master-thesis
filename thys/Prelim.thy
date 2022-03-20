@@ -700,5 +700,23 @@ lemma card_suc_greater_set: "\<lbrakk> card_order r ; A \<le>o r \<rbrakk> \<Lon
 
 lemma exists_univ_eq: "\<And>x y. (x = y) = (\<exists>z. z \<in> UNIV \<and> z = x \<and> z = y)"
   by simp
+lemma empty_subset_conj: "{} \<subseteq> A \<and> P \<longleftrightarrow> P"
+  by simp
+lemma rel_subset_imp: "\<lbrakk> \<forall>z6\<in>fst ` s. \<forall>y6\<in>snd ` s. R1 z6 y6 \<longrightarrow> R2 z6 y6 ; s \<subseteq> {(x, y). R1 x y} \<rbrakk> \<Longrightarrow> s \<subseteq> {(x, y). R2 x y}"
+  by fastforce
+lemma rel_ex_fst: "\<lbrakk> s \<subseteq> {(x, y). R1 x y} ; y \<in> snd ` s \<rbrakk> \<Longrightarrow> \<exists>x. x \<in> fst ` s \<and> R1 x y"
+  by fastforce
+lemma rel_ex_snd: "\<lbrakk> s \<subseteq> {(x, y). R1 x y} ; x \<in> fst ` s \<rbrakk> \<Longrightarrow> \<exists>y. y \<in> snd ` s \<and> R1 x y"
+  by fastforce
+lemma image_id: "id ` A = A"
+  by simp
+lemma OO_cong: "a = b \<Longrightarrow> c = d \<Longrightarrow> a OO c = b OO d"
+  by simp
+lemma conversep_cong: "a = b \<Longrightarrow> a\<inverse>\<inverse> = b\<inverse>\<inverse>"
+  by simp
+lemma ex_UNIV_id: "x \<in> UNIV \<Longrightarrow> \<exists>z. z \<in> UNIV \<and> id z = x \<and> f z = f x"
+  by simp
+lemma in_alt_top: "(\<lambda>x. f x \<subseteq> {_. True}) = (\<lambda>_. True)"
+  by simp
 
 end

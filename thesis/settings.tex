@@ -30,6 +30,9 @@
 \usepackage{semantic} %
 \usepackage[final]{microtype}
 \usepackage{caption}
+\usepackage{amsthm}
+\usepackage{changepage}
+\usepackage{needspace}
 \usepackage[printonlyused]{acronym}
 \usepackage[hidelinks]{hyperref} % hidelinks removes colored boxes around references and links
 
@@ -88,10 +91,27 @@
 \definecolor{tyvar}{HTML}{9867C5}
 
 \lstdefinelanguage{Isabelle}{
-  keywords={binds, in, binder, and, where},
+  keywords={binds, in, binder, and, where, distinct},
   keywordstyle=\color{darkgreen},
   ndkeywords={atom_decl,nominal_datatype, datatype, binder_datatype, typedef},
   ndkeywordstyle=\color{TUMBlue}
 }
 
 \newcommand\cvar[1]{\textcolor{tyvar}{\texttt{#1}}}
+
+\newcounter{axioms}\setcounter{axioms}{0}
+\newenvironment{axiom}[1]{%
+
+  \vspace{1em}\needspace{2em}\refstepcounter{axioms}
+  \textbf{Axiom \arabic{axioms} (#1).}%
+  \adjustwidth{\parindent+\parindent}{}%
+  \vspace{0.5em}
+  }{\endadjustwidth}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+
+\newcommand{\tyctor}[5]{\ensuremath{(\overline{#1}, \overline{#2}, \overline{#3}, \overline{#4}) #5}}
+\newcommand{\dtyctor}[1]{\tyctor{\beta}{\alpha}{\gamma}{\delta}{#1}}
+
+\newcommand{\ms}{\hspace*{\parindent}}

@@ -1,19 +1,131 @@
 \chapter{Theoretical Background}
 
-More or less copy paste from the other two?
-
 \section{Higher Order Logic}
 
+The default and best supported base logic for the Isabelle theorem prover is \ac{HOL}, written as Isabelle/HOL. The core of \ac{HOL} is based on Church's simple type theory~\cite{simple_type_theory} with rank-1 polymorphism where terms are implicitly $\alpha$\footnote{Terms are equal iff they only differ in the names of bound variables, e.g. $\lambda x.x = \lambda y.y$}-, $\beta$\footnote{Terms are equal iff they reduce to the same term, e.g. $(\lambda x.x) \: y = y$}- and $\eta$\footnote{Iff $x$ is not free in $e$, then $e = \lambda x. (e \: x)$}-equivalent. The logic requires only two axioms, the axiom of infinity\footnote{There exists at least one infinite set: The set of the natural numbers} and the axiom of choice\footnote{Given an infinite set of non-empty sets, it is possible to build a new set with exactly one element from each of the sets}. It thus is a much weaker logic than other supported base logics like \ac{ZF} set theory. In \ac{HOL}, primitive types (see figure~\ref{fig:hol_types}) can be used to define more complex types with a \textit{typedef} ($T' = \{ x :: T. P \: x \}$), which carves out a non-empty subset of a type $T$ with a predicate $P$. Terms can be constructed from primitive terms (see figure~\ref{fig:hol_terms}) and lambda abstraction and application.
+
+\begin{figure} %[H]
+\[
+\begin{array}{rcll}
+T  & \bnfeq &  & \\ %\hspace{-24pt}\text{Primitive Types} \\
+& \bnfor & \alpha & \text{Variables} \\
+& \bnfor & bool & \text{Booleans} \\
+& \bnfor & ind & \text{Infinite type (axiom of infinity)} \\
+& \bnfor & T \to T & \text{Function Types} \\
+\end{array}
+\]
+\caption{Primitive types of \ac{HOL}}
+\label{fig:hol_types}
+\end{figure}
+
+\begin{figure} %[H]
+\[
+\begin{array}{rclll}
+t  & \bnfeq & & & \\
+& \bnfor & (=) & :: \alpha \to \alpha \to bool & \text{Equality} \\
+& \bnfor & 0 & :: ind & \text{Zero} \\
+& \bnfor & Succ & :: ind \to ind & \text{Successor} \\
+& \bnfor & \epsilon & :: (\alpha \to bool) \to \alpha & \text{Hilbert Choice (axiom of choice)} \\
+\end{array}
+\]
+\caption{Primitive terms of \ac{HOL}, including their types}
+\label{fig:hol_terms}
+\end{figure}
+
+The \ac{HOL} library defines many commonly used types. From these types, the most relevant for this thesis are:
+
 \begin{itemize}
-\item{types}
-\item{type constructors}
-\item{deriving stuff from existing theorems}
+\item{$\alpha \: set$, the type of sets of elements of type $\alpha$ (ie the powertype of $\alpha$, represented by $\alpha \to bool$)}
+\item{$\alpha + \beta$, the disjoint union of $\alpha$ and $\beta$}
+\item{$\alpha \times \beta$, the cartesian product of $\alpha$ and $\beta$}
 \end{itemize}
 
-\section{(Map restricted) bounded natural functors}\label{sec:mrbnf_theory}
+\section{(Map Restricted) Bounded Natural Functors}\label{sec:mrbnf_theory}
 
+Since 2012, the standard data types in Isabelle/HOL are based on \acp{BNF}~\cite{isabelle_datatypes}. \acp{MRBNF} are a generalization of \acp{BNF} that allows to define an equivalence relation that models alpha-equivalence~\cite{mrbnfs}. Below, $\overline{\alpha}_n$ means $\alpha_1 \dots \alpha_n$, the index is omitted if clear from context. Also, below all free ($\beta$), bound ($\alpha$), live ($\gamma$) and dead ($\delta$) variables are in order, in reality they can be in an arbitrary order as long as the order of parameters on the type constructor is the same as on the functions $map_F$ and $rel_F$.
+
+\begin{definition}[\ac{MRBNF}]
+If $(\overline{\beta}_{m_1}, \overline{\alpha}_{m_2}, \overline{\gamma}_n, \overline{\delta}) F$ is a type constructor with:
 \begin{itemize}
-\item{from category theory}
-\item{BNFs are already the basis of Isabelle's datatypes}
-\item{MRBNFs are a generalization}
+\item{a function $map_F :: (\beta_1 \to \beta_1) \to \dots \to (\beta_{m_1} \to \beta_{m_1}) \to (\alpha_1 \to \alpha_1) \to \dots \to (\alpha_{m_2} \to \alpha_{m_2}) \to (\gamma_1 \to \gamma'_1) \to \dots \to (\gamma_n \to \gamma'_n) \to \dtyctor{F} \to \tyctor{\beta}{\alpha}{\gamma'}{\delta}{F}$}
+\item{functions $set_F^i :: \dtyctor{F} \to \beta_i$, for $i \in \{1 .. m_1\}$}
+\item{functions $set_F^{i+m_1} :: \dtyctor{F} \to \alpha_i$ for $i \in \{1 .. m_2\}$}
+\item{functions $set_F^{i+m_1+m_2} :: \dtyctor{F} \to \gamma_i$ for $i \in \{1 .. n\}$}
+\item{an infinite\footnote{$\aleph_0 \le bd_F$}, regular\footnote{$bd_F$ is equal to its own cofinality\label{ftn:regular}} cardinal number $bd_F$}
+\item{optionally a relator $rel_F :: (\beta_1 \to \beta_1) \to \dots \to (\beta_{m_1} \to \beta_{m_1}) \to (\alpha_1 \to \alpha_1) \to \dots \to (\alpha_{m_2} \to \alpha_{m_2} \to bool) \to (\gamma_1 \to \gamma'_1 \to bool) \to \dots \to (\gamma_n \to \gamma'_n \to bool) \to \dtyctor{F} \to \tyctor{\beta}{\alpha}{\gamma'}{\delta}{F} \to bool$}
 \end{itemize}
+
+
+that fulfils the \ac{MRBNF} axioms:
+\vspace{1em}
+
+\textit{Let} $\text{smallSupp} \: x \: y = (\forall i \in \{1..m_1\}. |\text{supp} \: x_i| < |\beta_i|) \wedge (\forall i \in \{1..m_2\}. |\text{supp} \: y_i| < |\alpha_i| \wedge \text{bij} \: y_i)$
+
+\newcommand{\mapF}[3]{map_F \: \overline{#1} \: \overline{#2} \: \overline{#3}}
+\newcommand{\relF}[3]{rel_F \: \overline{#1} \: \overline{#2} \: \overline{#3}}
+\newcommand{\smallSupp}[2]{\text{smallSupp} \: #1 \: #2}
+
+\begin{axiom}{defRel}\label{ax:def_rel}
+$\smallSupp{u}{v} \longrightarrow \\
+\ms \relF{u}{v}{R} \: x \: y \longleftrightarrow \exists z. (\forall i \in \{1..n\}. set_F^{i+m_1+m_2} z \subseteq \{(a, a') | R_i \: a \: a' \}) \wedge \\
+\ms \ms map_F \overline{id}_{m_1+m_2} \: \overline{\textit{fst}}_n \: z = x \: \wedge \mapF{u}{v}{\textit{snd}} \: z = y
+$
+\end{axiom}
+
+\begin{axiom}{mapId}\label{ax:map_id}
+$map_F \: \overline{id}_{m_1+m_2+n} = id$
+\end{axiom}
+
+\begin{axiom}{mapComp}\label{ax:map_comp}
+$\text{smallSupp} \: u \: v \wedge \text{smallSupp} \: u' v' \longrightarrow \\
+\ms map_F \: (u_1 \circ u'_1) \dots (u_{m_1} \circ u'_{m_1}) (v_1 \circ v'_1) \dots (v_{m_2} \circ v'_{m_2}) (f_1 \circ g_1) \dots (f_n \circ g_n) = \\
+\ms \mapF{u}{v}{f} \circ \mapF{u'}{v'}{g}$
+\end{axiom}
+
+\begin{axiom}{mapCong}\label{ax:map_cong}
+$\text{smallSupp} \: u \: v \wedge \text{smallSupp} \: u' \: v' \wedge \\
+\vspace*{0.3em} (\forall i \in \{1..m_1\}. \forall a \in set_F^i \: x. \: u_i \: a = u'_i \: a) \wedge \\
+\vspace*{0.3em} (\forall i \in \{1..m_2\}. \forall a \in set_F^{i+m_1} \: x. \: v_i \: a = v'_i \: a) \wedge \\
+(\forall i \in \{1..n\}. \forall a \in set_F^{i+m_1+m_2} \: x. \: f_i \: a = g_i \: a) \longrightarrow \\
+\ms \mapF{u}{v}{f} \: x = \mapF{u'}{v'}{g} \: x$
+\end{axiom}
+
+\begin{axiom}{setMap}\label{ax:set_map}
+$\text{smallSupp} \: u \: v \longrightarrow \\
+\vspace*{0.3em} \ms (\forall i \in \{1..m_1\}. set_F^i \circ \mapF{u}{v}{f} = \text{image} \: u_i \circ set_F^i) \wedge \\
+\vspace*{0.3em} \ms (\forall i \in \{1..m_2\}. set_F^{i+m_1} \circ \mapF{u}{v}{f} = \text{image} \: v_i \circ set_F^{i+m_1}) \wedge \\
+\ms (\forall i \in \{1..n\}. set_F^{i+m_1+m_2} \circ \mapF{u}{v}{f} = \text{image} \: f_i \circ set_F^{i+m_1+m_2})$
+\end{axiom}
+
+\begin{axiom}{setBd}\label{ax:set_bd}
+$\forall i \in \{1..m_1+m_2+n\}. \forall (x :: \dtyctor{F}). \: | set_F^i \: x | < bd_F$
+\end{axiom}
+
+\begin{axiom}{varLarge}\label{ax:var_large}
+$(\forall i \in \{1..m_1\}. bd_F \le |\beta_i|) \wedge (\forall i \in \{1..m_2\}. bd_F \le |\alpha_i|)$
+\end{axiom}
+
+\begin{axiom}{varRegular}\label{ax:var_regular}
+$(\forall i \in \{1..m_1\}. |\beta_i| \: \text{is regular\footref{ftn:regular}}) \wedge (\forall i \in \{1..m_2\}. |\alpha_i| \: \text{is regular\footref{ftn:regular}})$
+\end{axiom}
+
+\begin{axiom}{relEq}\label{ax:rel_eq}
+$rel_F \: \overline{id}_{m_1+m_2} \: \overline{(=)}_n \longleftrightarrow (=)$
+\end{axiom}
+
+\begin{axiom}{relComp}\label{ax:rel_comp}
+$\smallSupp{u}{v} \wedge \smallSupp{u'}{v'} \longrightarrow \\
+\ms rel_F (u_1 \circ u'_1) \dots (u_{m_1} \circ u'_{m_1}) (v_1 \circ v'_1) \dots (v_{m_2} \circ v'_{m_2}) (R_1 \diamond S_1) \dots (R_n \diamond S_n) = \\
+\ms \relF{u}{v}{R} \: \diamond \: \relF{u'}{v'}{S}$
+\end{axiom}
+
+\vspace{1em}
+
+then $F$ is a $\overline{\beta}$-\textit{free} $\overline{\alpha}$-\textit{binding map-restricted bounded natural functor (\ac{MRBNF})}.
+
+\end{definition}
+
+\noindent
+In absence of a relator on F, axiom~\ref{ax:def_rel} serves as the definition for the relator $rel_F$. The axioms~\ref{ax:map_id} and~\ref{ax:map_comp} ensure that $F$ is a functor on all inputs\footnote{with respect to the restricted input of small support endofunctions in the first $m_1$ inputs and small support endobijections in the next $m_2$ inputs}. Axiom~\ref{ax:map_cong} asserts that $map_F$ only depends on the value of the argument functions on the elements of $set_F^i$. The next two axioms (\ref{ax:set_map} and~\ref{ax:set_bd}) require that each $set_F^i$ function is a natural transformation between $(F, map_F)$ and the powerset functor $(set, \text{image})$ and all elements in $F$ are bounded by $bd_F$. To use $\overline{\beta}$ and $\overline{\alpha}$ as variables, it always has to be possible to get fresh variables, ie the set of possible variable values must not "run out". This is guaranteed by axioms~\ref{ax:var_large} and~\ref{ax:var_regular}. In the implemention, the two axioms are part of a type class on the parameters $\overline{\beta}$ and $\overline{\alpha}$. The last two axioms (\ref{ax:rel_eq} and~\ref{ax:rel_comp}) require the relator to respect equality and relation composition ($\diamond$).
+
+A \ac{BNF} is a special case of a \ac{MRBNF} with no free or bound variables (so $m_1 = m_2 = 0$), only live and/or dead variables. Thus the variable axioms are irrelevant and the small support requirement on all of the axioms are always true.

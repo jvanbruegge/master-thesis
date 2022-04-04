@@ -73,7 +73,7 @@ binder_datatype (@var@, @tyvar@) term =
   | Lam x::@var@ "@tyvar@ ty" t::term binds x in t
   | TyApp term "@tyvar@ ty"
   | TyLam a::@tyvar@ t::term binds a in t
-  | Let "((xs::@var@) * (ts::term)) list" t::term binds xs in ts t
+  | Let "((xs::@var@) * (ts::term)) list" t::term binds xs in ts t, distinct xs
 \end{lstlisting}
 
 This syntax would be translated to the type in listing~\ref{lst:binding_type}. For every variable type, a second type variable is introduced to stand in for the bound variables (\texttt{\textcolor{tyvar}{'bvar}} for \texttt{\textcolor{tyvar}{'var}} and \texttt{\textcolor{tyvar}{'btyvar}} for \texttt{\textcolor{tyvar}{'tyvar}}). The recursive components are replaced with one of two variables depending if a variable is bound in the recursive part (\texttt{\textcolor{tyvar}{'body}}) or not (\texttt{\textcolor{tyvar}{'rec}}). These extra variables are required for the \ac{MRBNF} fixpoint (see chapter~\ref{sec:fixpoint}). In this thesis, we do not implement this translation and expect the user to provide the type directly.
@@ -100,18 +100,18 @@ The construction of the fixpoint requires that the provided type is a \ac{MRBNF}
 \begin{algorithm}
 \caption{Recursive construction of a composed \ac{MRBNF} from a type}\label{alg:mrbnf_of_typ}
 \begin{algorithmic}[1]
-\Function{MRBNF\_of\_typ}{$t$}
+\Function{MRBNF\_of\_typ}{$t, label$}
   \If{$t = \text{Var}('x)$}
     \State $\textit{var\_type}\gets label('x)$ \Comment{\textcolor{darkgreen}{is $'x$ Live, Free, Bound or Dead?}}
     \State \Return $\textit{demote}([\textit{var\_type}], \text{ID\_mrbnf}('x))$
   \ElsIf{$t = (t_1,...,t_n) G \: \textbf{and} \: G \: \text{is a MRBNF}$}
-    \State $F_1,...,F_n\gets \Call{MRBNF\_of\_typ}{t_1},...,\Call{MRBNF\_of\_typ}{t_n}$
+    \State $F_1,...,F_n\gets \Call{MRBNF\_of\_typ}{t_1, label},...,\Call{MRBNF\_of\_typ}{t_n, label}$
     \State \Return $\textit{compose\_mrbnf}(G, [F_1,...,F_n])$
   \ElsIf{$t = (t_1,...,t_n) G \: \textbf{and} \: G \: \text{is a BNF}$}
     \State $\textit{mrbnf\_of\_bnf}(G)$ \Comment{\textcolor{darkgreen}{Convert G to a MRBNF and register it for future use}}
-    \State \Return \Call{MRBNF\_of\_typ}{$(t_1,...,t_n) G$}
+    \State \Return \Call{MRBNF\_of\_typ}{$(t_1,...,t_n) G, label$}
   \Else
-    \State \Return $\text{DEADID\_mrbnf}(t)$ \Comment{\textcolor{red}{TODO: ask Dmitriy what is really going on here}}
+    \State \Return $\text{DEADID\_mrbnf}(t)$
   \EndIf
 \EndFunction
 \end{algorithmic}

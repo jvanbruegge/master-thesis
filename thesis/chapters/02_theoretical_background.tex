@@ -51,8 +51,8 @@ If $(\overline{\beta}_{m_1}, \overline{\alpha}_{m_2}, \overline{\gamma}_n, \over
 \item{functions $set_F^i :: \dtyctor{F} \to \beta_i$, for $i \in \{1 .. m_1\}$}
 \item{functions $set_F^{i+m_1} :: \dtyctor{F} \to \alpha_i$ for $i \in \{1 .. m_2\}$}
 \item{functions $set_F^{i+m_1+m_2} :: \dtyctor{F} \to \gamma_i$ for $i \in \{1 .. n\}$}
-\item{an infinite\footnote{$\aleph_0 \le bd_F$}, regular\footnote{$bd_F$ is equal to its own cofinality\label{ftn:regular}} cardinal number $bd_F$}
-\item{optionally a relator $rel_F :: (\beta_1 \to \beta_1) \to \dots \to (\beta_{m_1} \to \beta_{m_1}) \to (\alpha_1 \to \alpha_1) \to \dots \to (\alpha_{m_2} \to \alpha_{m_2} \to bool) \to (\gamma_1 \to \gamma'_1 \to bool) \to \dots \to (\gamma_n \to \gamma'_n \to bool) \to \dtyctor{F} \to \tyctor{\beta}{\alpha}{\gamma'}{\delta}{F} \to bool$}
+\item{an infinite\footnote{$\aleph_0 \le bd_F$}, regular\footnote{the bound is equal to its own cofinality\label{ftn:regular}} cardinal number $bd_F$}
+\item{optionally a relator $rel_F :: (\beta_1 \to \beta_1) \to \dots \to (\beta_{m_1} \to \beta_{m_1}) \to (\alpha_1 \to \alpha_1) \to \dots \to (\alpha_{m_2} \to \alpha_{m_2}) \to (\gamma_1 \to \gamma'_1 \to bool) \to \dots \to (\gamma_n \to \gamma'_n \to bool) \to \dtyctor{F} \to \tyctor{\beta}{\alpha}{\gamma'}{\delta}{F} \to bool$}
 \end{itemize}
 
 
@@ -61,9 +61,8 @@ that fulfils the \ac{MRBNF} axioms:
 
 \textit{Let} $\text{smallSupp} \: x \: y = (\forall i \in \{1..m_1\}. |\text{supp} \: x_i| < |\beta_i|) \wedge (\forall i \in \{1..m_2\}. |\text{supp} \: y_i| < |\alpha_i| \wedge \text{bij} \: y_i)$
 
-\newcommand{\mapF}[3]{map_F \: \overline{#1} \: \overline{#2} \: \overline{#3}}
+\newcommand{\mapF}[3]{\map{F}{#1}{#2}{#3}}
 \newcommand{\relF}[3]{rel_F \: \overline{#1} \: \overline{#2} \: \overline{#3}}
-\newcommand{\smallSupp}[2]{\text{smallSupp} \: #1 \: #2}
 
 \begin{axiom}{defRel}\label{ax:def_rel}
 $\smallSupp{u}{v} \longrightarrow \\

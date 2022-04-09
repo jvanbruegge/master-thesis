@@ -1,11 +1,14 @@
 \chapter{Comparison with existing solutions}\label{chapter:comparison}
 
 \begin{itemize}
-\item{Nominal2}
-\item{De Bruin indices}
-\item{Locally Nameless}
+\item{Different solutions for different theorem provers}
+\item{Nameless, nominal logic and higher-order abstract syntax}
+\item{Sometimes a mix is used (e.g. locally nameless)}
 \end{itemize}
 
+\section{Nameless Representations}
+
+\section{Nominal Logic}
 
 TODO: Fix this
 
@@ -33,4 +36,7 @@ binder bn :: "binder_list => atom list" where
 \end{lstlisting}
 
 Our binding aware data types will not need this auxilliary list type nor the extraction function. As a future addition they can however support non-repetitive binders and more. At the time of writing most of the implementation is still missing, so it is hard to anticipate which syntactic features might be relevant in the future. For this reason this thesis does not choose a specific syntactic format and expects the user to provide the already translated types and the binding relation (see section~\ref{sec:binding relation}). The translation of the example above could look like listing~\ref{lst:binding_pre_datatype}. Note that contrary to Nominal2, variables in our binding aware data types are not specified with an extra command (like \texttt{atom\_decl}), but are a argument to the data type instead.
+
+\section{Higher-order abstract syntax}
+
 

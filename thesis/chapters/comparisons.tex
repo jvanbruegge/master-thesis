@@ -1,18 +1,16 @@
 \chapter{Comparison with existing solutions}\label{chapter:comparison}
 
-\begin{itemize}
-\item{Different solutions for different theorem provers}
-\item{Nameless, nominal logic and higher-order abstract syntax}
-\item{Sometimes a mix is used (e.g. locally nameless)}
-\end{itemize}
+Over the years, three main categories of variable representations have emerged: Nameless and syntactic representations as well as representations based on nominal logic\cite{nominal_logic} (nameful). Some reasoning frameworks also combine multiple paradigms like locally nameless\cite{locally_nameless}. \acp{MRBNF} firmly lie in the nominal logic category. However, the idea of representing variable binders as shapes to be filled is inspired by \ac{HOAS}.
 
 \section{Nameless Representations}
 
+De Bruijn indices\cite{deBruijn} and their variants circumvent the issue of variables names completely. Instead of using names to refer to free variables, in a nameless representation a free variable is a natural number that specifies how many enclosing lambda abstractions should be skipped. For example the $I$ combinator $\lambda x. \: x$ would be represented as $\lambda. \: 0$ while the $K$ combinator $\lambda x. \: \lambda y. \: x$ would be represented as $\lambda. \: \lambda. 1$. This has the advantage that $\alpha$-equivalence is the same as syntactic equivalence, making it easy to implement.
+
+However handling free variables and shifting variable references during substitution is harder than the nameful approach. Also it is not easy to generalize to more complex binding patterns like linear binders\footnote{binding the same variable multiple times in the same binder}, unordered simultaneous binders or recursive binders.
+
 \section{Nominal Logic}
 
-TODO: Fix this
-
-The Nominal2 package~\cite{nominal2} that is currently used to reason about data types with binders, allows to specify a function which extracts the binders from a type. This function is very limited and does not support data types that were not defined in the same mutually recursive group. This forces the user to create a new list type instead of using a normal list of tuples (see listing~\ref{lst:letrec_nominal}).
+At the time of writing, the most advanced implementation of nominal logic is the Nominal2 package~\cite{nominal2} for Isabelle. It supports simple and recursive binders and provides a custom induction scheme with freshness assumptions built in. To work with deep binders (like the record patterns in task 1B and 2B of the POPLmark challenge) it allows to define a function to extract variables from a datatype (see listing~\ref{lst:letrec_nominal}). Despite the support for more complex binding patterns, Nominal2 still has major limitations. For example it is not possible to express non-repetitive binders and it is not possible to nest recursion through normal Isabelle data types like \texttt{list}. This forces the user to create auxiliary, mutually recursive datatypes and thus they loose the rich library of theorems that already exists for the standard \texttt{list} type. Additionally, defining a function on a nominal datatype requires a lot of user written proofs to uphold variable freshness. The recursor for \acp{MRBNF} will have these proofs already built in.
 
 \begin{lstlisting}[
   language=Isabelle,
@@ -35,8 +33,7 @@ binder bn :: "binder_list => atom list" where
   | "bn (ACons x _ as) = atom x # bn as"
 \end{lstlisting}
 
-Our binding aware data types will not need this auxilliary list type nor the extraction function. As a future addition they can however support non-repetitive binders and more. At the time of writing most of the implementation is still missing, so it is hard to anticipate which syntactic features might be relevant in the future. For this reason this thesis does not choose a specific syntactic format and expects the user to provide the already translated types and the binding relation (see section~\ref{sec:binding relation}). The translation of the example above could look like listing~\ref{lst:binding_pre_datatype}. Note that contrary to Nominal2, variables in our binding aware data types are not specified with an extra command (like \texttt{atom\_decl}), but are a argument to the data type instead.
-
 \section{Higher-order abstract syntax}
 
+The main idea of \ac{HOAS} is to use the binding mechanism of the meta language to express the binding shape of the object language. Variables are represented by functions that can be seen as continuations that fill a shape with data. It is popular as standalone framework in languages like Twelf\cite{twelf}, but also implemented in general purpose theorem provers like Coq or Isabelle.
 

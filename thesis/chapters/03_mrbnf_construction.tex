@@ -80,7 +80,7 @@ definition Node :: "'a tree => 'a => 'a tree => 'a tree" where
 \end{lstlisting}
 \end{minipage}
 
-Our binding aware data types should mirror the normal data type definitions, with additional annotation to denote binding relations. The fundamental approach of using \acp{MRBNF} allows us to delay the definition of such a syntax until after the rest of the contruction is implemented. This allows to mold the syntax to the final set of supported features instead of having to try to anticipate them in advance. Taking inspiration from Nominal2~\cite{nominal2}, for the terms of our System F example it might look similar to this:
+Our binding aware data types should mirror the normal data type definitions, with additional annotation to denote binding relations. The fundamental approach of using \acp{MRBNF} allows us to delay the definition of such a syntax until after the rest of the construction is implemented. This allows to mold the syntax to the final set of supported features instead of having to try to anticipate them in advance. Taking inspiration from Nominal2~\cite{nominal2}, for the terms of our System F example it might look similar to this:
 
 \begin{lstlisting}[
   language=Isabelle,
@@ -99,7 +99,7 @@ binder_datatype (@var@, @tyvar@) term =
   | Let "((xs::@var@) * (ts::term)) list" t::term binds xs in ts t, distinct xs
 \end{lstlisting}
 
-This syntax would be translated to the type in listing~\ref{lst:binding_type}. For every variable type, a second type variable is introduced to stand in for the bound variables (\texttt{\textcolor{tyvar}{'bvar}} for \texttt{\textcolor{tyvar}{'var}} and \texttt{\textcolor{tyvar}{'btyvar}} for \texttt{\textcolor{tyvar}{'tyvar}}). The recursive components are replaced with one of two variables depending if a variable is bound in the recursive part (\texttt{\textcolor{tyvar}{'body}}) or not (\texttt{\textcolor{tyvar}{'rec}}). These extra variables are required for the \ac{MRBNF} fixpoint (see chapter~\ref{sec:fixpoint}). To support non-repetitive binders, a \texttt{\textcolor{darkgreen}{distinct}} annotation could be translated into the appropriate distinct list quotient type (\texttt{dlist}). In this thesis, we do not implement any translation and expect the user to provide the type directly.
+This syntax would be translated to the type in listing~\ref{lst:binding_type}. For every variable type, a second type variable is introduced to stand in for the bound variables (\texttt{\textcolor{tyvar}{'bvar}} for \texttt{\textcolor{tyvar}{'var}} and \texttt{\textcolor{tyvar}{'btyvar}} for \texttt{\textcolor{tyvar}{'tyvar}}). The recursive components are replaced with one of two variables depending if a variable is bound in the recursive part (\texttt{\textcolor{tyvar}{'body}}) or not (\texttt{\textcolor{tyvar}{'rec}}). These extra variables are required for the \ac{MRBNF} fixpoint (see chapter~\ref{sec:fixpoint}). To support non-repetitive binders, a \texttt{\textcolor{darkgreen}{distinct}} annotation could be translated into the appropriate distinct list quotient type (\texttt{fst\_dlist}; in this particular case there exists an equivalent type in the \ac{HOL} library: \texttt{dalist}). In this thesis, we do not implement any translation and expect the user to provide the type directly.
 
 \begin{lstlisting}[
   language=Isabelle,
@@ -116,9 +116,7 @@ This syntax would be translated to the type in listing~\ref{lst:binding_type}. F
 + (('bvar * 'body) fst_dlist * 'body)
 \end{lstlisting}
 
-\section{Proof of the \ac{MRBNF} axioms by composition}\label{sec:mrbnf_of_typ}
-
-The construction of the fixpoint requires that the provided type is a \ac{MRBNF}. To prove the axioms, the user-provided type is divided into individual pieces and composed back together according to this algorithm:
+\section{Proof of the \acs{MRBNF} axioms by composition}\label{sec:mrbnf_of_typ}
 
 \begin{algorithm}
 \caption{Recursive construction of a composed \ac{MRBNF} from a type}\label{alg:mrbnf_of_typ}
@@ -140,15 +138,17 @@ The construction of the fixpoint requires that the provided type is a \ac{MRBNF}
 \end{algorithmic}
 \end{algorithm}
 
+The construction of the fixpoint requires that the provided type is a \ac{MRBNF}. Thus, an algorithm that can automatically prove that an arbitrary, user-specified type is a \ac{MRBNF} is vital. To solve this issue, the user-specified type is recursively divided into small atomic pieces. These pieces are either a variable that will be wrapped by the \texttt{ID} \ac{MRBNF}, a \ac{BNF} that will be converted to a \ac{MRBNF}, or an arbitrary type that will be wrapped by the \texttt{DEADID} \ac{MRBNF}. Then, the pieces are composed back together according to the generalized \textit{MRBNF\_of\_typ} function (see algorithm~\ref{alg:mrbnf_of_typ}).
+
 Here, \textit{demote} refers to the function explained in section~\ref{sec:demote}, \textit{compose\_mrbnf} to the composition pipeline explained in section~\ref{sec:composition} and \textit{mrbnf\_of\_bnf} to the conversion function in section~\ref{sec:conversion}. In our example type from earlier (listing~\ref{lst:binding_type}) this composition would convert the product type \texttt{(*)}, the sum type \texttt{(+)} and the \texttt{dlist\_fst} type to \acp{MRBNF} (assuming that \texttt{dlist\_fst} is already a \ac{BNF}) and wrap every variable with the \text{ID\_mrbnf} demoted using the labels \texttt{Free\_Var} for \cvar{'var} and \cvar{'tyvar}, \texttt{Bound\_Var} for \cvar{'bvar} and \cvar{'btyvar}, and \texttt{Live\_Var} for \cvar{'body} and \cvar{'rec} (as the variable of \text{ID\_mrbnf} is already a live variable, demoting it to \texttt{Live\_Var} does nothing).
 
-\subsection{Conversion from BNF to MRBNF}\label{sec:conversion}
+\subsection{Conversion from \acs{BNF} to \acs{MRBNF}}\label{sec:conversion}
 
 As seen in section~\ref{sec:mrbnf_theory}, \acp{MRBNF} are a generalization of \acp{BNF}. This means every \ac{BNF} is also a \ac{MRBNF} that only has live and dead variables, no free or bound variables. The function \textit{mrbnf\_of\_bnf} provides the tactics that prove the \ac{MRBNF} axioms from the \ac{BNF} axioms.
 
-One notable change that has to be done is the bound. The \textit{set\_bd} \ac{BNF} axiom requires that the set returned by the set functions is smaller or equal to the cardinal bound, while the \ac{MRBNF} axioms require a strictly smaller set than the cardinal bound, so we cannot simply use the same cardinal for the \ac{MRBNF} as for the \ac{BNF}. Because of this, \textit{mrbnf\_of\_bnf} uses the successor cardinal as bound.
+One notable change that has to be done is the bound. The \textit{set\_bd} \ac{BNF} axiom requires that the set returned by the set functions is smaller or equal to the cardinal bound, while the \ac{MRBNF} axioms require a strictly smaller set than the cardinal bound. The difference here is again to ensure that there are always enough possible variables to choose from. In the implementation we cannot simply use the same cardinal for the \ac{MRBNF} as for the \ac{BNF}, so \textit{mrbnf\_of\_bnf} uses the successor cardinal as bound.
 
-\subsection{\ac{MRBNF} composition pipeline}\label{sec:composition}
+\subsection{\acs{MRBNF} composition pipeline}\label{sec:composition}
 
 To compose multiple \acp{MRBNF} together, we need to prove the \ac{MRBNF} axioms of the combined type given the axioms of the individual components. To simplify the proofs we only compose \acp{MRBNF} that meet certain invariants. Given an outer \ac{MRBNF} $G$ and several inner \acp{MRBNF} $\overline{F}$ we require:
 
@@ -158,7 +158,7 @@ To compose multiple \acp{MRBNF} together, we need to prove the \ac{MRBNF} axioms
 \item{every $F_i$ has the same live variables, in the same order (the first invariant already requires every $F_i$ to have the same free and bound variables, in the same order)}
 \end{itemize}
 
-This composition is called \textit{clean\_compose} and described in section~\ref{sec:clean_compose}. To be able to handle arbitrary \ac{MRBNF} compositions, auxilliary functions are introduced that transform the arbitrary case to the simple case that \textit{clean\_compose} can handle. First, \textit{demote} (see section~\ref{sec:demote}) is used to bring all variables in all \acp{MRBNF} to the same kind (free, bound, live or dead). Then \textit{lift} (see section~\ref{sec:lift}) adds new dummy variables to the front of the type constructor. Finally \textit{permute} (see section~\ref{sec:permute}) changes the order of variables on the type constructor. In the simple case, all of these functions behave like the identity function.
+This composition is called \textit{clean\_compose} and described in section~\ref{sec:clean_compose}. To be able to handle arbitrary \ac{MRBNF} compositions, auxiliary functions are introduced that transform the arbitrary case to the simple case that \textit{clean\_compose} can handle. First, \textit{demote} (see section~\ref{sec:demote}) is used to bring all variables in all \acp{MRBNF} to the same kind (free, bound, live or dead). Then \textit{lift} (see section~\ref{sec:lift}) adds new dummy variables to the front of the type constructor. Finally \textit{permute} (see section~\ref{sec:permute}) changes the order of variables on the type constructor. In the simple case, all of these functions behave like the identity function.
 
 \subsection{Demote}\label{sec:demote}
 
@@ -214,11 +214,9 @@ $\begin{array}{ll}
 \noindent
 Because we only introduce new premises (e.g. new \textit{smallSupp} premises for types that were live and demoted to free), and identities (\textit{id} for $map_F$ and \textit{(=)}/\textit{id} for $rel_F$), we can trivially derive the \ac{MRBNF} axioms for $H$ from $F$. The only exceptions are axioms~\ref{ax:def_rel} (\textbf{defRel}) and~\ref{ax:rel_comp} (\textbf{relComp}).
 
-TODO: Proof sketch
-
 \subsection{Lift}\label{sec:lift}
 
-After \textit{demote}, all inner \acp{MRBNF} need to be receive dummy variables for type parameters that are missing. After the \textit{lift} step, all inner \acp{MRBNF} have the same variables at the same variable kinds (but not yet in the same order). The \textit{lift} function itself prepends $k_1$ free dummy variables, $k_2$ bound dummy variables and $k_3$ live dummy variables to the front of the parameters of the type constructor. The \ac{MRBNF} axioms can be proven trivially from the axioms of the input.
+After \textit{demote}, all inner \acp{MRBNF} need to be extended with dummy variables for type parameters that are missing. After the \textit{lift} step, all inner \acp{MRBNF} have the same variables at the same variable kinds (but not yet in the same order). The \textit{lift} function itself prepends $k_1$ free dummy variables, $k_2$ bound dummy variables and $k_3$ live dummy variables to the front of the parameters of the type constructor. The \ac{MRBNF} axioms can be proven trivially from the axioms of the input.
 
 \vspace*{1em}
 \noindent
@@ -248,7 +246,7 @@ After \textit{demote}, all inner \acp{MRBNF} need to be receive dummy variables 
 
 \subsection{Permute}\label{sec:permute}
 
-To bring the variables of the outer and inner \acp{MRBNF} in the same order, a permutation is created for each to be used in the \textit{permute} function. It will reorder the arguments by creating a permutated lambda abstraction and appying the variables in order for the functions of the original \ac{MRBNF}. Again, proofs for the axioms are trivial.
+To bring the variables of the outer and inner \acp{MRBNF} in the same order, a permutation is created for each to be used in the \textit{permute} function. It will reorder the arguments by creating a permuted lambda abstraction and applying the variables in order for the functions of the original \ac{MRBNF}. Again, proofs for the axioms are trivial.
 
 \vspace*{1em}
 \noindent
@@ -274,17 +272,37 @@ To bring the variables of the outer and inner \acp{MRBNF} in the same order, a p
 \end{adjustwidth}
 \vspace*{-2em}
 
-\subsection{Clean \ac{MRBNF} composition}\label{sec:clean_compose}
+\subsection{Clean \acs{MRBNF} composition}\label{sec:clean_compose}
 
 \newcommand{\OF}[2]{\ensuremath{#1[\textit{OF} \: #2]}}
 
-Once all \acp{MRBNF} are normalized, \textit{clean\_compose} will prove the \ac{MRBNF} axioms from the axioms of the individual parts. Some commonly used facts in the proofs are \textit{trans}\footnote{$x = y \Longrightarrow y = z \Longrightarrow x = z$\label{ftn:trans}}, \textit{refl}\footnote{$x = x$}, \textit{argCong}\footnote{$\overline{x = y} \Longrightarrow f \: \overline{x} = f \: \overline{y}$}, \textit{forallCong}\footnote{$s \subseteq s' \Longrightarrow f = g \Longrightarrow (\forall x \in s. f x) \Longrightarrow (\forall x \in s'. g x)$}, \textit{subsetEqRefl}\footnote{$s \subseteq s$}, \textit{subsetEqUnLeft}\footnote{$s \subseteq s \cup s'$}, \textit{subsetEqUnRight}\footnote{$s \subseteq s' \cup s$}, \textit{subsetUN}\footnote{$ F \: k \subseteq \bigcup_{k=1}^{r} \left( F \: k \right) \quad \text{for} \: k \in \{1..r\} $}, \textit{forallInUN}\footnote{$ \forall x \in \bigcup \left( \text{image} \: f \: s \right). P \: x \Longrightarrow \forall x \in s. \forall y \in f \: x. P \: y $}, \textit{imageUn}\footnote{$\text{image} \: f (s \cup s') = \text{image} \: f \: s \cup \text{image} \: f \: s'$}, \textit{imageUnion}\footnote{$\text{image} \: f \left( \bigcup s \right) = \bigcup \left( \text{image} \: (\text{image} \: f) \: s \right)$}.
+Once all \acp{MRBNF} are normalized, \textit{clean\_compose} will prove the \ac{MRBNF} axioms from the axioms of the individual parts. This function was the main was the main part of the thesis with many subtle bugs and edge cases in the implementation. A big problem was to make the tactics robust enough to handle arbitrary \acp{MRBNF}. For example, \texttt{lift} will generate theorems that can cause an endless loop when naively unfolding definitions.
 
+To find these edge cases we created some automated testing infrastructure. Using a \ac{PRNG} random \acp{MRBNF} with different random variables are created. Then the composition function was called. After fixing lingering bugs in the implementation a 12 hour test run was started in which 250 compositions were successfully performed.
 
-$\OF{thm_1}{\overline{thm_i}}$ is the unification of the premises of $thm_1$ with $thm_i$. For example $\OF{\text{trans}}{(A = B)}$ results in $A = z \Longrightarrow B = z$.
+The proofs used in the implementation require some lemmas from the \ac{HOL} standard library (see figure~\ref{fig:lemmas}). Definitions are used implicitly, but mentioned in the proof step. Additionally, we write $\OF{thm}{\overline{thm_i}}$ when instantiating the assumptions of $thm$ with the theorems $\overline{thm_i}$. For example $\OF{\text{forallCong}}{\text{subsetEqUnLeft}}$ results in the theorem $f = g \Longrightarrow (\forall x \in (s \cup s'). \: f \: x) \Longrightarrow (\forall x \in s. \: g \: x)$.
 
+\begin{figure}
+\begin{center}
+\begin{tabular}{l l}
+refl & $x = x$ \\
+trans & $x = y \Longrightarrow y = z \Longrightarrow x = z$ \\
+argCong & $\overline{x = y} \Longrightarrow f \overline{x} = f \overline{y}$ \\
+forallCong & $s \subseteq s' \Longrightarrow f = g \Longrightarrow (\forall x \in s'. \: f \: x) \Longrightarrow (\forall x \in s. \: g \: x)$ \\
+subsetEqRefl & $s \subseteq s$ \\
+subsetEqUnLeft & $s \subseteq s \cup s'$ \\
+subsetEqUnRight & $s \subseteq s' \cup s$ \\
+subsetUN & $ F \: k \subseteq \bigcup_{k=1}^{r} \left( F \: k \right) \quad \text{for} \: k \in \{1..r\} $ \\
+forallInUN & $ \forall x \in \bigcup \left( \text{image} \: f \: s \right). P \: x \Longrightarrow \forall x \in s. \forall y \in f \: x. P \: y $ \\
+imageUn & $\text{image} \: f (s \cup s') = \text{image} \: f \: s \cup \text{image} \: f \: s'$ \\
+imageUN & $\text{image} \: f \left( \bigcup s \right) = \bigcup \left( \text{image} \: (\text{image} \: f) \: s \right)$
+\end{tabular}
+\end{center}
+\caption{Used lemmas from the \ac{HOL} library}\label{fig:lemmas}
+\end{figure}
 
-\vspace*{1em}
+\needspace{20em}
+%\vspace*{1em}
 \noindent
 \textbf{Input:}
 \begin{itemize}
@@ -319,10 +337,10 @@ $\OF{thm_1}{\overline{thm_i}}$ is the unification of the premises of $thm_1$ wit
 \newcounter{mapId}\setcounter{mapId}{0}
 \textbf{mapId:} $map_H \overline{id}_{m_1+m_2+n} = id$
 \begin{align}
-\have & map_G \: \overline{id}_{m_1+m_2} (map_{F_1} \: \overline{id}) \dots (map_{F_t} \: \overline{id}) = map_G \: \overline{id} \label{map_id1} \\
+\have & map_G \: \overline{id}_{m_1+m_2} (map_{F_1} \: \overline{id}) \dots (map_{F_t} \: \overline{id}) = map_G \: \overline{id} \label{map_id1} \\*
  & \by \OF{\text{argCong}}{\overline{\text{refl}}_{m_1+m_2} \: \text{mapId}_{F_1} \dots \text{mapId}_{F_t}} \nonumber \\
-\have & map_G \overline{id}_{m_1+m_2} (map_{F_1} \: \overline{id}) \dots (map_{F_t} \: \overline{id}) = id \\
-& \by \OF{\text{trans}}{(\ref{map_id1}) \: \text{mapId}_G} \nonumber \\
+\have & map_G \overline{id}_{m_1+m_2} (map_{F_1} \: \overline{id}) \dots (map_{F_t} \: \overline{id}) = id \\*
+& \by \OF{\text{trans}}{(\ref{map_id1}) \: \text{mapId}_G} \nonumber \\*
 \qed \nonumber
 \end{align}
 
@@ -404,18 +422,28 @@ f_i & \text{if} \: i - (m_1+m_2) \in \{1..n\}
 =\:\: & \text{image} \: h_i \left( \bigcup_{j=1}^t \left(\bigcup \left( \text{image} \: set_{F_j}^i (set_G^{j+m_1+m_2} \: x) \right) \right) \right) \label{set_map2} \\*
  & \by \text{TODO} \nonumber \\
 %
-\have & \forall i \in \{1..m_1+m_2\}. \nonumber \\*
-& \quad set_G^i (\map{H}{u}{v}{f} \: x) \cup \bigcup_{j=1}^t \left(\bigcup \left( \text{image} \: set_{F_j}^i (set_G^{j+m_1+m_2} \: (\map{H}{u}{v}{f} x)) \right) \right) \nonumber \\*
-& \quad \text{image} \: h_i \left( \bigcup_{j=1}^t \left(\bigcup \left( \text{image} \: set_{F_j}^i (set_G^{j+m_1+m_2} \: x) \right) \right) \right) \\*
- & \by \OF{\text{argCong}(\cup)}{(\ref{set_map1}) \: (\ref{set_map2})}, \text{compDef} \nonumber \\
-%
+\have & \forall i \in \{1..m_1+m_2+n\}. \nonumber \\*
+& \quad s^i (\map{H}{u}{v}{f} \: x) \cup \bigcup_{j=1}^t \left(\bigcup \left( \text{image} \: set_{F_j}^i (set_G^{j+m_1+m_2} \: (\map{H}{u}{v}{f} x)) \right) \right) \nonumber \\*
+& \quad \text{image} \: h_i \left( s^i \: x \cup \bigcup_{j=1}^t \left(\bigcup \left( \text{image} \: set_{F_j}^i (set_G^{j+m_1+m_2} \: x) \right) \right) \right) \\*
+ & \by \OF{\text{argCong}(\cup)}{(\ref{set_map1}) \: (\ref{set_map2})}, \text{compDef} \nonumber \\*
+\qed \nonumber
 \end{align}
 
 \section{Fixpoint construction of the data type}\label{sec:fixpoint}
 
-\begin{itemize}
-\item{Partly implemented by Stoop~\cite{mrbnf_fixpoint}}
-\item{Use the greatest or least fixpoint of the pre-datatype to obtain a recursive datatype}
-\item{Generates a recursor/corecursor that can be used to write functions}
-\item{Generates an weak induction principle}
-\end{itemize}
+After the composition algorithm, the user-defined type is proven to be a \ac{MRBNF}. But it still is not a recursive datatype and there exists no notion of variable binding or $\alpha$-equivalence. The self-recursive datatype is then created as either the least or greatest fixpoint (for datatypes and codatatypes respectively) of the equation $\overline{\alpha} \: T \simeq (\overline{\alpha}, \overline{\overline{\alpha} \: T}) F$ for a \ac{MRBNF} $F$. Using the example from earlier (terms of System F with recursive lets; see listing~\ref{lst:binding_type}) as $F$, the fixpoint construction would define the pre-datatype like this:
+
+\begin{lstlisting}[
+  language=Isabelle,
+  caption=Pre-Datatype of the terms of System F,
+  label={lst:pre_datatype},
+  otherkeywords={'var, 'tyvar, 'bvar, 'btyvar, 'body, 'rec},
+  keywordstyle=\color{tyvar}
+]
+datatype ('var, 'tyvar) raw_terms = raw_terms_ctor
+  "('var, 'var, 'tyvar, 'tyvar, ('var, 'tyvar) raw_terms, ('var, 'tyvar) raw_terms) F"
+\end{lstlisting}
+
+All other definitions including the $\alpha$-equivalent quotient type is based off this raw type. The fixpoint construction is already implemented by Stoop\cite{mrbnf_fixpoint}. It first creates the recursive pre-datatype. Then it defines a \texttt{rename} function that works on bound variables only and uses the \texttt{map} function of the underlying \ac{MRBNF}. Afterwards it uses the \texttt{set} functions of the \ac{MRBNF} to define a function that calculates the free variables of a term. With these definitions, an equivalence relation is derived which corresponds to $\alpha$-equivalence. With it, a quotient type is defined and relevant lemmas and functions are lifted to the quotient. The last step is to strengthen the induction principle to include freshness assumptions.
+
+This thesis we started to integrate the fixpoint construction to provide end-to-end tooling from user-specified type to recursive quotient type.

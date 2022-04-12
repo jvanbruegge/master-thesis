@@ -1,10 +1,19 @@
 \chapter{Introduction}\label{chapter:introduction}
 
+Reasoning about programming languages often requires dealing with variable binders. Concretely this means that terms containing binders should be $\alpha$-equivalent\footnote{Terms are equal iff bound variables can be renamed to make the terms syntactically equal, e.g. $\lambda x. \: x = \lambda y. \: y$ \label{ftn:alpha-equivalence}} and that substitution should be avoid capture of free variables\footnote{For example, given $t = \lambda x. \: a$, substituting $a$ for a free variable $x$ requires the binder to be renamed: $t = \lambda y.\: x$}. In pen and paper proofs usually Barendregt's variable convention\cite{variable_convention} is used to assume that bound variables can be freely renamed to avoid all free variables and that terms are $\alpha$-equivalent. However, when trying to formalize such proofs in a proof assistant, this assumption has to be proven true.
+
+Over the years, several representations for variable binders have been developed to ease such formalizations. They come with various levels of proof automation and expressiveness. The POPLmark challenge\cite{poplmark} defines several reasoning tasks with increasing complexity in binding patterns. The challenge allows to compare different representations and their implementations more easily. While all representations can easily express simple, singular binders, many fail with more complex binding patterns like recursive binders that are needed for recursive let expressions.
+
+Recently, Blanchette et. al.\cite{mrbnfs} developed a semantics-based approach to variable binders that removes several limitations of earlier representations while allowing for a higher degree of proof automation. Furthermore, instead of requiring terms with binders to be finite (datatypes), it allows reasoning about infinitely branching and/or infinitely deep term types (codatatypes). The basis for their work is the notion of a \acf{MRBNF} -- a structure from category theory -- and targets the Isabelle/HOL\footnote{In this thesis, we will use "Isabelle/HOL" and "Isabelle" interchangeably}\cite{isabelle} theorem prover. \acp{MRBNF} are a generalization of \acp{BNF} that form the foundation of datatypes in Isabelle today\cite{isabelle_datatypes}.
+
+\pagebreak %TODO something better
+
+While the theory of \acp{MRBNF} is formalized in Isabelle, to make it a viable alternative to existing representations requires a lot of proof automation. Thus the main contributions of this thesis are:
+
 \begin{itemize}
-\item{Formal proofs about programming languages need to be able to deal with bound/free variables}
-\item{Also needs capture avoiding substitution}
-\item{Barendregt's variable convention makes proofs a lot easier, but in a formal setting, this convention has to be proven correct}
-\item{Generalization of normal datatypes can deal with those issues and provide special induction principles with the variable convention builtin}
-\item{Example of a simple lambda calculus}
-\item{Show multi (recursive) let, with distinct variables (POPL Example 4)}
+\item{Proof automation to convert \acp{BNF} into \acp{MRBNF} that can be used to embed normal (non-binding) datatypes like \texttt{'a list} in binder datatypes}
+\item{A composition pipeline that normalizes multiple \acp{MRBNF} with regard to each other}
+\item{Proof automation to compose normalized \acp{MRBNF}\footnote{The code that defines composed functions and sets up the proof goals was written by Roshardt\cite{mrbnf_composition}. During this thesis we fixed lingering bugs in the code and wrote the tactics that would prove said goals.}}
+\item{Automated, randomized tests to validate the \ac{MRBNF} composition}
+\item{Integration of the \ac{MRBNF} fixpoint automation developed by Stoop\cite{mrbnf_fixpoint}}
 \end{itemize}

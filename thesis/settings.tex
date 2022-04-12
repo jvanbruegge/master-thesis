@@ -1,5 +1,6 @@
 \PassOptionsToPackage{table,svgnames,dvipsnames}{xcolor}
 
+\usepackage[fleqn]{mathtools}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[sc]{mathpazo}
@@ -26,16 +27,15 @@
 \usepackage{pgfplots}
 \usepackage{pgfplotstable}
 \usepackage{booktabs}
-\usepackage{mathtools}
+\usepackage{amsthm}
 \usepackage{semantic} %
 \usepackage[final]{microtype}
 \usepackage{caption}
-\usepackage{amsthm}
 \usepackage{changepage}
 \usepackage{needspace}
+\usepackage{bussproofs}
 \usepackage[printonlyused]{acronym}
 \usepackage[hidelinks]{hyperref} % hidelinks removes colored boxes around references and links
-
 % My packages
 \usepackage{algorithm}
 \usepackage{algpseudocode}
@@ -93,7 +93,7 @@
 \lstdefinelanguage{Isabelle}{
   keywords={binds, in, binder, and, where, distinct},
   keywordstyle=\color{darkgreen},
-  ndkeywords={atom_decl,nominal_datatype, datatype, binder_datatype, typedef},
+  ndkeywords={atom_decl,nominal_datatype, datatype, binder_datatype, typedef, definition},
   ndkeywordstyle=\color{TUMBlue}
 }
 
@@ -115,3 +115,8 @@
 \newcommand{\dtyctor}[1]{\tyctor{\beta}{\alpha}{\gamma}{\delta}{#1}}
 
 \newcommand{\ms}{\hspace*{\parindent}}
+\newcommand{\fn}[5]{{#1}_{#2} \: \overline{#3} \: \overline{#4} \: \overline{#5}}
+\newcommand{\map}[4]{\fn{map}{#1}{#2}{#3}{#4}}
+
+\renewcommand{\defeq}{\vcentcolon=}
+\newcommand{\smallSupp}[2]{\text{smallSupp} \: \overline{#1} \: \overline{#2}}

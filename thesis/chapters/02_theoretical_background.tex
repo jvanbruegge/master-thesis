@@ -51,24 +51,22 @@ If $(\overline{\beta}_{m_1}, \overline{\alpha}_{m_2}, \overline{\gamma}_n, \over
 \item{functions $set_F^i :: \dtyctor{F} \to \beta_i$, for $i \in \{1 .. m_1\}$}
 \item{functions $set_F^{i+m_1} :: \dtyctor{F} \to \alpha_i$ for $i \in \{1 .. m_2\}$}
 \item{functions $set_F^{i+m_1+m_2} :: \dtyctor{F} \to \gamma_i$ for $i \in \{1 .. n\}$}
-\item{an infinite\footnote{$\aleph_0 \le bd_F$}, regular\footnote{$bd_F$ is equal to its own cofinality\label{ftn:regular}} cardinal number $bd_F$}
-\item{optionally a relator $rel_F :: (\beta_1 \to \beta_1) \to \dots \to (\beta_{m_1} \to \beta_{m_1}) \to (\alpha_1 \to \alpha_1) \to \dots \to (\alpha_{m_2} \to \alpha_{m_2} \to bool) \to (\gamma_1 \to \gamma'_1 \to bool) \to \dots \to (\gamma_n \to \gamma'_n \to bool) \to \dtyctor{F} \to \tyctor{\beta}{\alpha}{\gamma'}{\delta}{F} \to bool$}
+\item{an infinite\footnote{$\aleph_0 \le bd_F$}, regular\footnote{the bound is equal to its own cofinality\label{ftn:regular}} cardinal number $bd_F$}
+\item{optionally a relator $rel_F :: (\gamma_1 \to \gamma'_1 \to bool) \to \dots \to (\gamma_n \to \gamma'_n \to bool) \to \dtyctor{F} \to \tyctor{\beta}{\alpha}{\gamma'}{\delta}{F} \to bool$}
 \end{itemize}
-
 
 that fulfils the \ac{MRBNF} axioms:
 \vspace{1em}
 
-\textit{Let} $\text{smallSupp} \: x \: y = (\forall i \in \{1..m_1\}. |\text{supp} \: x_i| < |\beta_i|) \wedge (\forall i \in \{1..m_2\}. |\text{supp} \: y_i| < |\alpha_i| \wedge \text{bij} \: y_i)$
+\textit{Let} $\text{smallSupp} \: \overline{x} \: \overline{y} = (\forall i \in \{1..m_1\}. |\text{supp} \: x_i| < |\beta_i|) \wedge (\forall i \in \{1..m_2\}. |\text{supp} \: y_i| < |\alpha_i| \wedge \text{bij} \: y_i)$
 
-\newcommand{\mapF}[3]{map_F \: \overline{#1} \: \overline{#2} \: \overline{#3}}
+\newcommand{\mapF}[3]{\map{F}{#1}{#2}{#3}}
 \newcommand{\relF}[3]{rel_F \: \overline{#1} \: \overline{#2} \: \overline{#3}}
-\newcommand{\smallSupp}[2]{\text{smallSupp} \: #1 \: #2}
 
 \begin{axiom}{defRel}\label{ax:def_rel}
 $\smallSupp{u}{v} \longrightarrow \\
-\ms \relF{u}{v}{R} \: x \: y \longleftrightarrow \exists z. (\forall i \in \{1..n\}. set_F^{i+m_1+m_2} z \subseteq \{(a, a') | R_i \: a \: a' \}) \wedge \\
-\ms \ms map_F \overline{id}_{m_1+m_2} \: \overline{\textit{fst}}_n \: z = x \: \wedge \mapF{u}{v}{\textit{snd}} \: z = y
+\ms rel_F \: \overline{R} \: (\map{F}{u}{v}{id} \: x) \: y \longleftrightarrow \exists z. (\forall i \in \{1..n\}. set_F^{i+m_1+m_2} z \subseteq \{(a, a') | R_i \: a \: a' \}) \wedge \\*
+\ms \ms map_F \: \overline{id}_{m_1+m_2} \: \overline{\textit{fst}}_n \: z = x \: \wedge \mapF{u}{v}{\textit{snd}} \: z = y
 $
 \end{axiom}
 
@@ -77,13 +75,13 @@ $map_F \: \overline{id}_{m_1+m_2+n} = id$
 \end{axiom}
 
 \begin{axiom}{mapComp}\label{ax:map_comp}
-$\text{smallSupp} \: u \: v \wedge \text{smallSupp} \: u' v' \longrightarrow \\
+$\smallSupp{u}{v} \wedge \smallSupp{u'}{v'} \longrightarrow \\
 \ms map_F \: (u_1 \circ u'_1) \dots (u_{m_1} \circ u'_{m_1}) (v_1 \circ v'_1) \dots (v_{m_2} \circ v'_{m_2}) (f_1 \circ g_1) \dots (f_n \circ g_n) = \\
 \ms \mapF{u}{v}{f} \circ \mapF{u'}{v'}{g}$
 \end{axiom}
 
 \begin{axiom}{mapCong}\label{ax:map_cong}
-$\text{smallSupp} \: u \: v \wedge \text{smallSupp} \: u' \: v' \wedge \\
+$\smallSupp{u}{v} \wedge \smallSupp{u'}{v'} \wedge \\
 \vspace*{0.3em} (\forall i \in \{1..m_1\}. \forall a \in set_F^i \: x. \: u_i \: a = u'_i \: a) \wedge \\
 \vspace*{0.3em} (\forall i \in \{1..m_2\}. \forall a \in set_F^{i+m_1} \: x. \: v_i \: a = v'_i \: a) \wedge \\
 (\forall i \in \{1..n\}. \forall a \in set_F^{i+m_1+m_2} \: x. \: f_i \: a = g_i \: a) \longrightarrow \\
@@ -91,7 +89,7 @@ $\text{smallSupp} \: u \: v \wedge \text{smallSupp} \: u' \: v' \wedge \\
 \end{axiom}
 
 \begin{axiom}{setMap}\label{ax:set_map}
-$\text{smallSupp} \: u \: v \longrightarrow \\
+$\smallSupp{u}{v} \longrightarrow \\
 \vspace*{0.3em} \ms (\forall i \in \{1..m_1\}. set_F^i \circ \mapF{u}{v}{f} = \text{image} \: u_i \circ set_F^i) \wedge \\
 \vspace*{0.3em} \ms (\forall i \in \{1..m_2\}. set_F^{i+m_1} \circ \mapF{u}{v}{f} = \text{image} \: v_i \circ set_F^{i+m_1}) \wedge \\
 \ms (\forall i \in \{1..n\}. set_F^{i+m_1+m_2} \circ \mapF{u}{v}{f} = \text{image} \: f_i \circ set_F^{i+m_1+m_2})$
@@ -110,13 +108,13 @@ $(\forall i \in \{1..m_1\}. |\beta_i| \: \text{is regular\footref{ftn:regular}})
 \end{axiom}
 
 \begin{axiom}{relEq}\label{ax:rel_eq}
-$rel_F \: \overline{id}_{m_1+m_2} \: \overline{(=)}_n \longleftrightarrow (=)$
+$rel_F \: \overline{(=)}_n \longleftrightarrow (=)$
 \end{axiom}
 
 \begin{axiom}{relComp}\label{ax:rel_comp}
-$\smallSupp{u}{v} \wedge \smallSupp{u'}{v'} \longrightarrow \\
-\ms rel_F (u_1 \circ u'_1) \dots (u_{m_1} \circ u'_{m_1}) (v_1 \circ v'_1) \dots (v_{m_2} \circ v'_{m_2}) (R_1 \diamond S_1) \dots (R_n \diamond S_n) = \\
-\ms \relF{u}{v}{R} \: \diamond \: \relF{u'}{v'}{S}$
+$\smallSupp{u}{v} \wedge \smallSupp{u'}{v'} \longrightarrow \\*
+\ms rel_F (R_1 \diamond S_1) \dots (R_n \diamond S_n) \: \circ \: map_F \: (u_1 \circ u'_1) \dots (u_{m_1} \circ u'_{m_1}) (v_1 \circ v'_1) \dots (v_{m_2} \circ v'_{m_2} \: \overline{id}_n) \\
+\ms = (rel_F \: \overline{R} \: \circ \: \map{F}{u}{v}{id}) \: \diamond \: (rel_F \: \overline{S} \: \circ \: \map{F}{u'}{v'}{id})$
 \end{axiom}
 
 \vspace{1em}
@@ -126,6 +124,6 @@ then $F$ is a $\overline{\beta}$-\textit{free} $\overline{\alpha}$-\textit{bindi
 \end{definition}
 
 \noindent
-In absence of a relator on F, axiom~\ref{ax:def_rel} serves as the definition for the relator $rel_F$. The axioms~\ref{ax:map_id} and~\ref{ax:map_comp} ensure that $F$ is a functor on all inputs\footnote{with respect to the restricted input of small support endofunctions in the first $m_1$ inputs and small support endobijections in the next $m_2$ inputs}. Axiom~\ref{ax:map_cong} asserts that $map_F$ only depends on the value of the argument functions on the elements of $set_F^i$. The next two axioms (\ref{ax:set_map} and~\ref{ax:set_bd}) require that each $set_F^i$ function is a natural transformation between $(F, map_F)$ and the powerset functor $(set, \text{image})$ and all elements in $F$ are bounded by $bd_F$. To use $\overline{\beta}$ and $\overline{\alpha}$ as variables, it always has to be possible to get fresh variables, ie the set of possible variable values must not "run out". This is guaranteed by axioms~\ref{ax:var_large} and~\ref{ax:var_regular}. In the implemention, the two axioms are part of a type class on the parameters $\overline{\beta}$ and $\overline{\alpha}$. The last two axioms (\ref{ax:rel_eq} and~\ref{ax:rel_comp}) require the relator to respect equality and relation composition ($\diamond$).
+In absence of a relator on F, axiom~\ref{ax:def_rel} serves as the definition for the relator $rel_F$. The axioms~\ref{ax:map_id} and~\ref{ax:map_comp} ensure that $F$ is a functor on all inputs\footnote{with respect to the restricted input of small support endofunctions in the first $m_1$ inputs and small support endobijections in the next $m_2$ inputs}. Axiom~\ref{ax:map_cong} asserts that $map_F$ only depends on the value of the argument functions on the elements of $set_F^i$. The next two axioms (\ref{ax:set_map} and~\ref{ax:set_bd}) require that each $set_F^i$ function is a natural transformation between $(F, map_F)$ and the powerset functor $(set, \text{image})$ and all elements in $F$ are bounded by $bd_F$. To use $\overline{\beta}$ and $\overline{\alpha}$ as variables, it always has to be possible to get fresh variables, ie the set of possible variable values must not "run out". This is guaranteed by axioms~\ref{ax:var_large} and~\ref{ax:var_regular}. In the implementation, the two axioms are part of a type class on the parameters $\overline{\beta}$ and $\overline{\alpha}$. The last two axioms (\ref{ax:rel_eq} and~\ref{ax:rel_comp}) require the relator to respect equality and relation composition ($\diamond$).
 
 A \ac{BNF} is a special case of a \ac{MRBNF} with no free or bound variables (so $m_1 = m_2 = 0$), only live and/or dead variables. Thus the variable axioms are irrelevant and the small support requirement on all of the axioms are always true.

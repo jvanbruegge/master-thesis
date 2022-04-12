@@ -1,6 +1,7 @@
 \chapter{Conclusion}
 
-\begin{itemize}
-\item{Way less work for the user compared to Nominal2}
-\item{Actually composes well}
-\end{itemize}
+The semantics-based approach of \acp{MRBNF} allows for a lot of proof automation and makes it easy to reason about even complex binding patterns. However a lot implementation work has to be done in order to make it a viable alternative to established reasoning methods.
+
+However, this effort will be worth it. The simplest (but not smallest) benefit will be the support for nested recursion in binder datatypes. This makes definitions and proofs more modular and reusable. Additionally, defining functions that interact with bound variables will are more flexible because the recursor does not require a fixed set of avoided variables. The most intriguing possibility of \acp{MRBNF} are binding codatatypes that can be used for example to reason about infinite traces of programs.
+
+Looking at the future, the ease of use coupled with the power of the framework may enable more programming language researchers to formally prove their work instead of relying on pen and paper proofs.

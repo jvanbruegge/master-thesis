@@ -316,7 +316,7 @@ Once all \acp{MRBNF} are normalized, \textit{clean\_compose} will prove the \ac{
 
 To find these edge cases, we created an automated testing infrastructure. Using a \ac{PRNG}, random \acp{MRBNF} with different variables are created. Then the composition function was called. After fixing lingering bugs in the implementation a 12 hour test run was started in which 250 compositions were successfully performed.
 
-The proofs used in the implementation require some lemmas from the \ac{HOL} standard library (see figure~\ref{fig:lemmas}). Definitions are unfolded implicitly, but mentioned in the proof step. Additionally, we write $\OF{thm}{\overline{thm_i}}$ when instantiating the assumptions of $thm$ with the theorems $\overline{thm_i}$. For example $\OF{\text{forallCong}}{\text{subsetEqUnLeft}}$ results in the theorem $f = g \Longrightarrow (\forall x \in (s \cup s'). \: f \: x) \Longrightarrow (\forall x \in s. \: g \: x)$.
+The proofs used in the implementation require some lemmas from the \ac{HOL} standard library (see figure~\ref{fig:lemmas}). Definitions are unfolded implicitly, but mentioned in the proof step. Additionally, we write $\OF{thm}{\overline{thm_i}}$ when instantiating the assumptions of $thm$ with the theorems $\overline{thm_i}$, unifying meta variables in the process. For example $\OF{\text{forallSubset}}{\text{subsetEqUnLeft}}$ results in the theorem $f = g \Longrightarrow (\forall x \in (s \cup s'). \: f \: x) \Longrightarrow (\forall x \in s. \: g \: x)$.
 
 \begin{figure}
 \begin{center}

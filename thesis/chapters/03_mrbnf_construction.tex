@@ -330,16 +330,24 @@ subsetEqRefl & $s \subseteq s$ \\
 subsetEqUnLeft & $s \subseteq s \cup s'$ \\
 subsetEqUnRight & $s \subseteq s' \cup s$ \\
 Un\_def & $\bigcup_{k=1}^r (F k) \defeq F 1 \cup \dots \cup F r$ \\
-subsetUnF & $ F \: k \subseteq \bigcup_{k=1}^{r} \left( F \: k \right) \quad \text{for} \: k \in \{1..r\} $ \\
+subsetUnF & $ F \: j \subseteq \bigcup_{k=1}^{r} \left( F \: k \right) \quad \text{for} \: j \in \{1..r\} $ \\
 forallInUN & $ \forall x \in \bigcup \left( \text{image} \: f \: s \right). P \: x \Longrightarrow \forall x \in s. \forall y \in f \: x. P \: y $ \\
 imageUn & $\text{image} \: f (s \cup s') = \text{image} \: f \: s \cup \text{image} \: f \: s'$ \\
 imageUnF & $\text{image} \: f \: \left( \bigcup_{k=1}^r (F k) \right) = \bigcup_{k=1}^r (\text{image} \: f (F k))$ \\
 imageUN & $\text{image} \: f \left( \bigcup s \right) = \bigcup \left( \text{image} \: (\text{image} \: f) \: s \right)$ \\
-imageComp & $\text{image} \: f \: (\text{image} \: g \: s) = \text{image} \: (f \circ g) \: s$
+imageComp & $\text{image} \: f \: (\text{image} \: g \: s) = \text{image} \: (f \circ g) \: s$ \\
+cardUn\footnotemark & $|A| < r \Longrightarrow |B| < r \Longrightarrow |A \cup B| < r$ \\
+cardProdL\footnotemark[\value{footnote}] & $|A| < r_1 \Longrightarrow |A| < r_1 \times r_2$ \\
+cardSumUnF\footnotemark[\value{footnote}] & $\forall j \in \{1..t\}. \: |s_j| < r_0 \times r_j \Longrightarrow \left| \bigcup_{k=1}^t s_k \right| < r_0 \times (r_1 + \dots + r_t)$ \\
+cardImage\footnote[\value{footnote}] & $\forall y. \: |f \: y| < r_1 \Longrightarrow \forall y. \: |g \: y| < r_2 \Longrightarrow \left| \bigcup \left( \text{image} \: f \: (g \: x) \right) \right| < r_2 \times r_1$ \\
+cardProdBound\footnote[\value{footnote}] & $r_1 \le r_0 \Longrightarrow r_2 \le r_0 \Longrightarrow r_1 \times r_2 \le r_0 $ \\
+cardSumBound\footnote[\value{footnote}] & $\forall i \in \{1..t\}. \: r_i \le r_0 \Longrightarrow r_1 + \dots + r_t \le r_0$ \\
 \end{tabular}
 \end{center}
 \caption{Used lemmas from the \ac{HOL} library}\label{fig:lemmas}
 \end{figure}
+
+\footnotetext{Here $r_i$ is infinite, regular and well-ordered\label{ftn:ifco}}
 
 \needspace{20em}
 %\vspace*{1em}
@@ -494,6 +502,55 @@ f_i & \text{if} \: i - (m_1+m_2) \in \{1..n\}
 & \quad s^i (\map{H}{u}{v}{f} \: x) \cup \bigcup_{j=1}^t \left(\bigcup \left( \text{image} \: set_{F_j}^i (set_G^{j+m_1+m_2} \: (\map{H}{u}{v}{f} x)) \right) \right) \nonumber \\*
 & \quad \text{image} \: h_i \left( s^i \: x \cup \bigcup_{j=1}^t \left(\bigcup \left( \text{image} \: set_{F_j}^i (set_G^{j+m_1+m_2} \: x) \right) \right) \right) \\*
  & \by \OF{\text{trans}}{\OF{\text{argCong}(\cup)}{(\ref{set_map1}) \: (\ref{set_map5})} \: \OF{\text{sym}}{\text{imageUn}}}, \text{compDef} \nonumber \\*
+\qed \nonumber
+\end{align}
+
+\textbf{setBd:} $\forall i \in \{1..m_1+m_2+n\}. \: \forall (x :: \tyctor{\beta}{\alpha}{\gamma}{\delta'}{H}). \: set_H^i \: x < bd_H$
+\begin{align}
+\have & \forall i \in \{1..m_1+m_2\}. \: set_G^i \: x < bd_G \times (bd_{F_1} + \dots + bd_{F_t}) \label{set_bd3} \\*
+& \by \OF{\text{cardProdL}}{\text{setBd}_G} \nonumber \\
+%
+\have & \forall i \in \{1.m_1+m_2+n\}. \: \bigcup \left( \text{image} \: set_{F_j}^i (set_G^{j+m_1+m_2} \: x) \right) < bd_G \times bd_{F_j} \label{set_bd1} \\*
+ & \quad \text{for} \: j \in \{1..t\} \nonumber \\*
+ & \by \OF{\text{cardImage}}{\text{setBd}_{F_j} \: \text{setBd}_G} \nonumber \\
+%
+\have & \forall i \in \{1..m_1+m_2+n\}. \nonumber \\*
+& \quad \bigcup_{j=1}^t \left(\bigcup \left( \text{image} \: set_{F_j}^i (set_G^{j+m_1+m_2} \: x) \right) \right) < bd_G \times (bd_{F_1} + \dots + bd_{F_t}) \label{set_bd2} \\*
+& \by \OF{\text{cardSumUnF}}{(\ref{set_bd1})} \nonumber \\
+%
+\have & \forall i \in \{1..m_1+m_2+n\}. \: s_i \: x \: \cup \nonumber \\*
+& \quad \bigcup_{j=1}^t \left(\bigcup \left( \text{image} \: set_{F_j}^i (set_G^{j+m_1+m_2} \: x) \right) \right) < bd_G \times (bd_{F_1} + \dots + bd_{F_t}) \\*
+& \by \OF{\text{cardUn}}{(\ref{set_bd3}) \: (\ref{set_bd2})} \nonumber \\*
+\qed \nonumber
+\end{align}
+
+\textbf{varLarge:} $(\forall i \in \{1..m_1\}. \: bd_H \le |\beta_i|) \wedge (\forall i \in \{1..m_2\}. \: bd_H \le |\alpha_i|)$
+\begin{align}
+\textbf{Let} \quad & \mathcal{X}_i = \begin{cases}
+\beta_i & \text{if} \: i \in \{1..m_1\} \\
+\alpha_{i-m_1} & \text{if} \: i - m_1 \in \{1..m_2\}
+\end{cases} \nonumber \\
+%
+\have & \forall i \in \{1..m_1+m_2\}. \: bd_{F_1} + \dots + bd_{F_t} \le |\mathcal{X}_i| \label{var_large1} \\*
+& \by \OF{\text{cardSumBound}}{\overline{\text{varLarge}_{F_j}}} \nonumber \\
+%
+\have & \forall i \in \{1..m_1+m_2\}. bd_G \: \times \: (bd_{F_1} + \dots + bd_{F_t}) \le |\mathcal{X}_i| \\*
+& \by \OF{\text{cardProdBound}}{\text{varLarge}_G \: (\ref{var_large1})} \nonumber \\*
+\qed \nonumber
+\end{align}
+
+\textbf{varRegular:} $(\forall i \in \{1..m_1\}. |\beta_i| \: \text{is regular}) \wedge (\forall i \in \{1..m_2\}. |\alpha_i| \: \text{is regular})$ \\
+\hspace*{1.7em} $\by \text{varRegular}_G$
+
+\vspace*{1.5em}
+
+\textbf{relEq}: $rel_H \: \overline{(=)}_n \longleftrightarrow (=)$
+\begin{align}
+\have & rel_G \: (rel_{F_1} \overline{(=)}_n)\dots(rel_{F_t} \overline{(=)}_n) = rel_G \: \overline{(=)}_n \label{rel_eq1} \\*
+& \by \OF{\text{argCong}}{\overline{\text{relEq}_{F_j}}} \nonumber \\
+%
+\have & rel_G \: (rel_{F_1} \overline{(=)}_n)\dots(rel_{F_t} \overline{(=)}_n) = (=) \\*
+& \by \OF{\text{trans}}{(\ref{rel_eq1}) \: \text{relEq}_G} \nonumber \\*
 \qed \nonumber
 \end{align}
 

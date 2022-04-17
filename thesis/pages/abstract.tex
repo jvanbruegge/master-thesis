@@ -1,5 +1,3 @@
 \chapter{\abstractname}
 
-%TODO: Abstract
-
-
+Reasoning about structures with variable binders like in programming languages requires dealing with variable freshness and capture-avoiding substitution. Blanchette et. al. presented a new logical framework that represents binders as \acfp{MRBNF}. To make this approach viable, it has to be possible to automatically proof that an arbitrary, user-specified type fulfills the axioms of these functors. We present a generalized composition algorithm that can be used to recursively divide the type into atomic parts, convert the parts into \acp{MRBNF} and proof the \ac{MRBNF} axioms for their composition. This algorithm is implemented for Isabelle/HOL and tested successfully on over 250 randomized examples.

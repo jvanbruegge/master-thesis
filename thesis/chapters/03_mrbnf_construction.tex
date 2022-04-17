@@ -316,7 +316,7 @@ Once all \acp{MRBNF} are normalized, \textit{clean\_compose} will prove the \ac{
 
 To find these edge cases, we created an automated testing infrastructure. Using a \ac{PRNG}, random \acp{MRBNF} with different variables are created. Then the composition function was called. After fixing lingering bugs in the implementation a 12 hour test run was started in which 250 compositions were successfully performed.
 
-The proofs used in the implementation require some lemmas from the \ac{HOL} standard library (see figure~\ref{fig:lemmas}). Definitions are unfolded implicitly, but mentioned in the proof step. Additionally, we write $\OF{thm}{\overline{thm_i}}$ when instantiating the assumptions of $thm$ with the theorems $\overline{thm_i}$, unifying meta variables in the process. For example $\OF{\text{forallSubset}}{\text{subsetEqUnLeft}}$ results in the theorem $f = g \Longrightarrow (\forall x \in (s \cup s'). \: f \: x) \Longrightarrow (\forall x \in s. \: g \: x)$.
+The proofs used in the implementation require some lemmas from the \ac{HOL} standard library (see figure~\ref{fig:lemmas}). Definitions are unfolded implicitly, but mentioned in the proof step. Additionally, we write $\OF{thm}{\overline{thm_i}}$ when instantiating the assumptions of $thm$ with the theorems $\overline{thm_i}$, unifying meta variables in the process. For example $\OF{\text{forallSubset}}{\text{subsetEqUnLeft}}$ results in the theorem $f = g \Longrightarrow (\forall x \in (s \cup s'). \: f \: x) \Longrightarrow (\forall x \in s. \: g \: x)$. The proofs for the axioms~\ref{ax:def_rel} (defRel) and~\ref{ax:rel_comp} (relComp) are omitted here because they are mostly technical and very long. Please refer to the implementation~\cite{implementation} for more details on these proofs.
 
 \begin{figure}
 \begin{center}
@@ -341,7 +341,7 @@ cardProdL\footnotemark[\value{footnote}] & $|A| < r_1 \Longrightarrow |A| < r_1 
 cardSumUnF\footnotemark[\value{footnote}] & $\forall j \in \{1..t\}. \: |s_j| < r_0 \times r_j \Longrightarrow \left| \bigcup_{k=1}^t s_k \right| < r_0 \times (r_1 + \dots + r_t)$ \\
 cardImage\footnote[\value{footnote}] & $\forall y. \: |f \: y| < r_1 \Longrightarrow \forall y. \: |g \: y| < r_2 \Longrightarrow \left| \bigcup \left( \text{image} \: f \: (g \: x) \right) \right| < r_2 \times r_1$ \\
 cardProdBound\footnote[\value{footnote}] & $r_1 \le r_0 \Longrightarrow r_2 \le r_0 \Longrightarrow r_1 \times r_2 \le r_0 $ \\
-cardSumBound\footnote[\value{footnote}] & $\forall i \in \{1..t\}. \: r_i \le r_0 \Longrightarrow r_1 + \dots + r_t \le r_0$ \\
+cardSumBound\footnote[\value{footnote}] & $\forall i \in \{1..t\}. \: r_i \le r_0 \Longrightarrow r_1 + \dots + r_t \le r_0$
 \end{tabular}
 \end{center}
 \caption{Used lemmas from the \ac{HOL} library}\label{fig:lemmas}
@@ -382,7 +382,6 @@ cardSumBound\footnote[\value{footnote}] & $\forall i \in \{1..t\}. \: r_i \le r_
 \newcommand{\have}{\textbf{have}\:\:}
 \newcommand{\by}{\textbf{by}\:}
 
-\newcounter{mapId}\setcounter{mapId}{0}
 \textbf{mapId:} $map_H \overline{id}_{m_1+m_2+n} = id$
 \begin{align}
 \have & map_G \: \overline{id}_{m_1+m_2} (map_{F_1} \: \overline{id}) \dots (map_{F_t} \: \overline{id}) = map_G \: \overline{id} \label{map_id1} \\*
@@ -544,7 +543,7 @@ f_i & \text{if} \: i - (m_1+m_2) \in \{1..n\}
 
 \vspace*{1.5em}
 
-\textbf{relEq}: $rel_H \: \overline{(=)}_n \longleftrightarrow (=)$
+\textbf{relEq:} $rel_H \: \overline{(=)}_n \longleftrightarrow (=)$
 \begin{align}
 \have & rel_G \: (rel_{F_1} \overline{(=)}_n)\dots(rel_{F_t} \overline{(=)}_n) = rel_G \: \overline{(=)}_n \label{rel_eq1} \\*
 & \by \OF{\text{argCong}}{\overline{\text{relEq}_{F_j}}} \nonumber \\

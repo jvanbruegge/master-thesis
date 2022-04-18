@@ -2,7 +2,7 @@
 
 \section{Higher Order Logic}
 
-The default and most widely used object logic for the Isabelle theorem prover is \ac{HOL}, written as Isabelle/HOL. The core of \ac{HOL} is based on Church's simple type theory~\cite{simple_type_theory} with rank-1 polymorphism where terms are implicitly $\alpha$\footnote{Terms are equal iff they only differ in the names of bound variables, e.g. $\lambda x.x = \lambda y.y$}-, $\beta$\footnote{Terms are equal iff they reduce to the same term, e.g. $(\lambda x.x) \: y = y$}- and $\eta$\footnote{Iff $x$ is not free in $e$, then $e = \lambda x. (e \: x)$}-equivalent. The logic requires two main axioms, the axiom of infinity\footnote{There exists at least one infinite set: The set of the natural numbers} and the axiom of choice\footnote{Given an infinite set of non-empty sets, it is possible to build a new set with exactly one element from each of the sets}. It thus is a much weaker logic than other supported base logics like \ac{ZF} set theory. In \ac{HOL}, primitive types (see figure~\ref{fig:hol_types}) can be used to define more complex types with a \textit{typedef} ($T' = \{ x :: T. \: P \: x \}$), which carves out a non-empty subset of a type $T$ with a predicate $P$. Terms can be constructed from primitive terms (see figure~\ref{fig:hol_terms}) and lambda abstraction and application.
+The default and most widely used object logic for the Isabelle theorem prover is \ac{HOL}, written as Isabelle/HOL. The core of \ac{HOL} is based on Church's simple type theory~\cite{simple_type_theory} with rank-1 polymorphism where terms are implicitly $\alpha$\footnote{Terms are equal iff they only differ in the names of bound variables, e.g. $\lambda x.x = \lambda y.y$}-, $\beta$\footnote{Terms are equal iff they reduce to the same term, e.g. $(\lambda x.x) \: y = y$}- and $\eta$\footnote{Iff $x$ is not free in $e$, then $e = \lambda x. (e \: x)$}-equivalent. The logic requires two main axioms, the axiom of infinity\footnote{There exists at least one infinite set: The set of the natural numbers} and the axiom of choice\footnote{Given an infinite set of non-empty sets, it is possible to build a new set with exactly one element from each of the sets}. It thus is a much weaker logic than other supported object logics like \ac{ZF} set theory. In \ac{HOL}, primitive types (see figure~\ref{fig:hol_types}) can be used to define more complex types with a \textit{typedef} ($T' = \{ x :: T. \: P \: x \}$), which carves out a non-empty subset of a type $T$ with a predicate $P$. Terms can be constructed from primitive terms (see figure~\ref{fig:hol_terms}) and lambda abstraction and application.
 
 \begin{figure} %[H]
 \[
@@ -42,23 +42,25 @@ The \ac{HOL} library defines many commonly used types. From these types, the mos
 
 \section{(Map Restricted) Bounded Natural Functors}\label{sec:mrbnf_theory}
 
-Since 2012, the standard data types in Isabelle/HOL are based on \acfp{BNF}~\cite{isabelle_datatypes}. They feature two different kinds of variables: live and dead variables. The main difference is that live variables may be used to nest recursion in the data type. A variables becomes dead either by explictly annotating it or by using it with a datatype that is not a \ac{BNF}, for example \texttt{'a set}. \acp{MRBNF} are a generalization of \acp{BNF} that feature two additional variable kinds, free and bound variables to use for free and binder variables respectively. These extra variable kinds allow to define an equivalence relation that models alpha-equivalence~\cite{mrbnfs}. Below, $\overline{\alpha}_n$ means $\alpha_1 \dots \alpha_n$, the index is omitted if clear from context. Also, below all free ($\beta$), bound ($\alpha$), live ($\gamma$) and dead ($\delta$) variables are always in order, while in reality they can be in an arbitrary order as long as the order of parameters on the type constructor is the same as on the functions $map_F$ and $rel_F$.
+Since 2012, the standard data types in Isabelle/HOL are based on \acfp{BNF}~\cite{isabelle_datatypes}. They feature two different kinds of variables: live and dead variables. The main difference is that live variables may be used to nest recursion in the data type. A variables becomes dead either by explictly annotating it or by using it with a datatype that is not a \ac{BNF}, for example \texttt{'a set}. \acp{MRBNF} are a generalization of \acp{BNF} that feature two additional variable kinds -- free and bound variables -- to use for free and binder variables respectively. These extra variable kinds allow to define an equivalence relation that models alpha-equivalence~\cite{mrbnfs}.
+
+Below, $\overline{\alpha}_n$ means $\alpha_1 \dots \alpha_n$, the index is omitted if clear from context. Also, all free ($\beta$), bound ($\alpha$), live ($\gamma$) and dead ($\delta$) variables are always presented in order, while in reality they can be interleaved arbitrarily as long as the order of parameters on the type constructor is the same as on the functions $map_F$ and $rel_F$.
 
 \begin{definition}[\ac{MRBNF}]
 If $(\overline{\beta}_{m_1}, \overline{\alpha}_{m_2}, \overline{\gamma}_n, \overline{\delta}) F$ is a type constructor with:
 \begin{itemize}
 \item{a function $map_F :: (\beta_1 \to \beta_1) \to \dots \to (\beta_{m_1} \to \beta_{m_1}) \to (\alpha_1 \to \alpha_1) \to \dots \to (\alpha_{m_2} \to \alpha_{m_2}) \to (\gamma_1 \to \gamma'_1) \to \dots \to (\gamma_n \to \gamma'_n) \to \dtyctor{F} \to \tyctor{\beta}{\alpha}{\gamma'}{\delta}{F}$}
-\item{functions $set_F^i :: \dtyctor{F} \to \beta_i \: set$, for $i \in \{1 .. m_1\}$}
+\item{functions $set_F^i :: \dtyctor{F} \to \beta_i \: set$ for $i \in \{1 .. m_1\}$}
 \item{functions $set_F^{i+m_1} :: \dtyctor{F} \to \alpha_i \: set$ for $i \in \{1 .. m_2\}$}
 \item{functions $set_F^{i+m_1+m_2} :: \dtyctor{F} \to \gamma_i \: set$ for $i \in \{1 .. n\}$}
-\item{an infinite\footnote{$\aleph_0 \le bd_F$}, regular\footnote{the bound is equal to its own cofinality, ie is the smallest cardinal of all subsets of the set\label{ftn:regular}} and well-ordered cardinal number $bd_F$}
+\item{an infinite\footnote{$\aleph_0 \le bd_F$}, regular\footnote{the bound is equal to its own cofinality, ie it is the smallest cardinal of all subsets of the set\label{ftn:regular}} and well-ordered cardinal number $bd_F$}
 \item{optionally a relator $rel_F :: (\gamma_1 \to \gamma'_1 \to bool) \to \dots \to (\gamma_n \to \gamma'_n \to bool) \to \dtyctor{F} \to \tyctor{\beta}{\alpha}{\gamma'}{\delta}{F} \to bool$}
 \end{itemize}
 
 that fulfils the \ac{MRBNF} axioms:
 \vspace{1em}
 
-\textit{Let} $\text{smallSupp} \: \overline{x} \: \overline{y} = (\forall i \in \{1..m_1\}. |\text{supp} \: x_i| < |\beta_i|) \wedge (\forall i \in \{1..m_2\}. |\text{supp} \: y_i| < |\alpha_i| \wedge \text{bij} \: y_i)$
+\textbf{Let} $\text{smallSupp} \: \overline{x} \: \overline{y} = (\forall i \in \{1..m_1\}. |\text{supp} \: x_i| < |\beta_i|) \wedge (\forall i \in \{1..m_2\}. |\text{supp} \: y_i| < |\alpha_i| \wedge \text{bij} \: y_i)$
 
 \newcommand{\mapF}[3]{\map{F}{#1}{#2}{#3}}
 \newcommand{\relF}[3]{rel_F \: \overline{#1} \: \overline{#2} \: \overline{#3}}

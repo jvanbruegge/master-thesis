@@ -1,10 +1,10 @@
 \chapter{Comparison with existing solutions}\label{chapter:comparison}
 
-Over the years, three main categories of variable representations have emerged: Nameless and syntactic representations as well as representations based on nominal logic\cite{nominal_logic} (nameful). Some reasoning frameworks also combine multiple paradigms like locally nameless\cite{locally_nameless}. \acp{MRBNF} firmly lie in the nominal logic category. However, the idea of representing variable binders as shapes to be filled is inspired by \ac{HOAS}.
+Over the years, three main categories of variable representations have emerged: Nameless and syntactic representations as well as representations based on nominal logic~\cite{nominal_logic} (nameful). Some reasoning frameworks also combine multiple paradigms like "locally nameless"~\cite{locally_nameless}. \acp{MRBNF} firmly lie in the nominal logic category. However, the idea of representing variable binders as shapes to be filled is inspired by \ac{HOAS}.
 
 \section{Nameless Representations}
 
-De Bruijn indices\cite{deBruijn} and their variants circumvent the issue of variables names completely. Instead of using names to refer to free variables, in a nameless representation a free variable is a natural number that specifies how many enclosing lambda abstractions should be skipped. For example the $I$ combinator $\lambda x. \: x$ would be represented as $\lambda. \: 0$ while the $K$ combinator $\lambda x. \: \lambda y. \: x$ would be represented as $\lambda. \: \lambda. 1$. This has the advantage that $\alpha$-equivalence is the same as syntactic equivalence, making it easy to implement.
+De Bruijn indices~\cite{deBruijn} and their variants circumvent the issue of variables names completely. Instead of using names to refer to free variables, in a nameless representation a free variable is a natural number that specifies how many enclosing lambda abstractions should be skipped. For example the $I$ combinator $\lambda x. \: x$ would be represented as $\lambda. \: 0$ while the $K$ combinator $\lambda x. \: \lambda y. \: x$ would be represented as $\lambda. \: \lambda. 1$. This has the advantage that $\alpha$-equivalence is the same as syntactic equivalence, making it easy to implement.
 
 However handling free variables and shifting variable references during substitution is harder than the nameful approach. Also it is not easy to generalize to more complex binding patterns like linear binders\footnote{binding the same variable multiple times in the same binder}, unordered simultaneous binders, recursive binders or variable types with infinite support.
 
@@ -35,6 +35,6 @@ binder bn :: "binder_list => atom list" where
 
 \section{Higher-order abstract syntax}
 
-The main idea of \ac{HOAS} is to use the binding mechanism of the meta language to express the binding shape of the object language. Variables are represented by functions that can be seen as continuations that fill a shape with data. It is popular as standalone framework in languages like Twelf\cite{twelf}, but also implemented in general purpose theorem provers like Coq or Isabelle.
+The main idea of \ac{HOAS} is to use the binding mechanism of the meta language to express the binding shape of the object language. Variables are represented by functions that can be seen as continuations that fill a shape with data. It is popular as standalone framework in languages like Twelf~\cite{twelf}, but also implemented in general purpose theorem provers like Coq or Isabelle.
 
 The main advantage of \ac{HOAS} is that the issue of binding variables is outsourced to the meta language, thus reducing the burden of the user. However it is hard to encode more complex binders than the meta language itself supports.

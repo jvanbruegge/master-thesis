@@ -6,8 +6,6 @@ Over the years, several representations for variable binders have been developed
 
 Recently, Blanchette et. al.~\cite{mrbnfs} developed a semantics-based approach to variable binders that removes several limitations of earlier representations while allowing for a higher degree of proof automation. Furthermore, instead of requiring terms with binders to be finite (datatypes), it allows reasoning about infinitely branching and/or infinitely deep term types (codatatypes). The basis for their work is the notion of a \acf{MRBNF} -- a structure from category theory -- and targets the Isabelle/HOL\footnote{In this thesis, we will use "Isabelle/HOL" and "Isabelle" interchangeably}~\cite{isabelle} theorem prover. \acp{MRBNF} are a generalization of \acp{BNF} that form the foundation of datatypes in Isabelle today~\cite{isabelle_datatypes}.
 
-\pagebreak %TODO something better
-
 While the theory of \acp{MRBNF} is formalized in Isabelle, to make it a viable alternative to existing representations requires a lot of proof automation. Thus the main contributions of this thesis are:
 
 \begin{itemize}

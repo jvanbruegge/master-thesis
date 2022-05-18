@@ -40,8 +40,8 @@ sig
     (comp_cache * unfold_set) * local_theory -> MRBNF_Def.mrbnf * ((comp_cache * unfold_set) * local_theory)
   val normalize_mrbnfs: (int -> binding -> binding) -> (string * sort) option list ->
     (string * sort) list list -> (string * sort) list -> ((string * sort) list list ->
-    (string * sort) list) -> MRBNF_Def.mrbnf ->  MRBNF_Def.mrbnf list -> (comp_cache * unfold_set) * local_theory ->
-    (int list list * (string * sort) list) * MRBNF_Def.mrbnf * (MRBNF_Def.mrbnf list * ((comp_cache * unfold_set) * local_theory))
+    (string * sort) list) -> MRBNF_Def.mrbnf option ->  MRBNF_Def.mrbnf list -> (comp_cache * unfold_set) * local_theory ->
+    (int list list * (string * sort) list) * MRBNF_Def.mrbnf option * (MRBNF_Def.mrbnf list * ((comp_cache * unfold_set) * local_theory))
   val compose_mrbnf: MRBNF_Def.inline_policy -> (int -> binding -> binding) ->
     ((string * sort) list list -> (string * sort) list) -> MRBNF_Def.mrbnf -> MRBNF_Def.mrbnf list ->
     typ list -> typ list list -> typ option list -> typ list list -> (comp_cache * unfold_set) * local_theory ->
@@ -1138,12 +1138,14 @@ structure Vars = Table(type key = (string * sort) val ord = tfree_ord);
 fun map_option f (SOME x) = SOME (f x)
   | map_option _ NONE = NONE
 
-fun normalize_mrbnfs qualify oAs Ass Ds flatten_tyargs outer mrbnfs accum =
+fun normalize_mrbnfs qualify oAs Ass Ds flatten_tyargs outer_opt mrbnfs accum =
   let
-    val oAs' = map_filter (fn (x, var_type) => case x of
-      SOME y => SOME (y, var_type)
-      | NONE => NONE
-    ) (oAs ~~ var_types_of_mrbnf outer)
+    val oAs' = case outer_opt of
+      SOME outer => map_filter (fn (x, var_type) => case x of
+          SOME y => SOME (y, var_type)
+          | NONE => NONE
+        ) (oAs ~~ var_types_of_mrbnf outer)
+      | NONE => [];
     val var_map = fold (fold (fn (A, var_type) => Vars.map_default (A, var_type) (fn var_type' =>
       case var_type_ord (var_type, var_type') of LESS => var_type | _ => var_type'
     ))) (oAs' :: map2 (fn As => fn mrbnf => As ~~ var_types_of_mrbnf mrbnf) Ass mrbnfs)
@@ -1153,7 +1155,9 @@ fun normalize_mrbnfs qualify oAs Ass Ds flatten_tyargs outer mrbnfs accum =
       SOME y => the (Vars.lookup var_map y)
       | NONE => Live_Var
     ) oAs;
-    val (outer', accum') = demote_mrbnf (qualify 0) odemote_target_types outer accum
+    val (outer'_opt, accum') = case outer_opt of
+      SOME outer => demote_mrbnf (qualify 0) odemote_target_types outer accum |>> SOME
+      | NONE => (outer_opt, accum);
 
     val demote_target_types = map (map_filter (fn A => Vars.lookup var_map A)) Ass
     val (inners', accum'') = @{fold_map 3} (demote_mrbnf o qualify)
@@ -1210,10 +1214,12 @@ fun normalize_mrbnfs qualify oAs Ass Ds flatten_tyargs outer mrbnfs accum =
       ) vars ([], length vars - 1 downto length As') |> fst
       end
 
-    val (outer'', accum''') = lift_and_permute_mrbnf (qualify (length mrbnfs)) olift_ns osrc odest outer' accum''
+    val (outer''_opt, accum''') = case outer'_opt of
+      SOME outer' => lift_and_permute_mrbnf (qualify (length mrbnfs)) olift_ns osrc odest outer' accum'' |>> SOME
+      | NONE => (outer'_opt, accum'');
   in
     ((kill_poss, map fst As),
-      outer'',
+      outer''_opt,
       @{fold_map 5} (lift_and_permute_mrbnf o qualify)
         (if length mrbnfs = 1 then [0] else 1 upto length mrbnfs)
         lift_ns srcs dests inners' accum''')
@@ -1225,8 +1231,8 @@ fun raw_compose_mrbnf const_policy qualify flatten_tyargs outer inners oDs Dss o
     val Ass = map (map Term.dest_TFree) tfreess;
     val oAs = map (map_option Term.dest_TFree) otfrees
     val Ds = fold (fold Term.add_tfreesT) (oDs :: Dss) [];
-    val ((kill_poss, As), outer', (inners', ((cache', unfold_set'), lthy'))) =
-      normalize_mrbnfs qualify oAs Ass Ds flatten_tyargs outer inners accum;
+    val ((kill_poss, As), SOME outer', (inners', ((cache', unfold_set'), lthy'))) =
+      normalize_mrbnfs qualify oAs Ass Ds flatten_tyargs (SOME outer) inners accum;
     val Ds =
       oDs @ flat (@{map 3} (uncurry append oo curry swap oo map o nth) tfreess kill_poss Dss);
     val As = map TFree As;

@@ -79,6 +79,29 @@ let
 in lthy'' end
 \<close>
 
-print_theorems
+(*print_theorems
+
+ML \<open>
+val _ = |>
+\<close>
+
+ML_file \<open>Tools/mrbnf_fp_util.ML\<close>
+ML_file \<open>Tools/mrbnf_fp_def_sugar.ML\<close>
+ML_file \<open>Tools/mrbnf_fp_tactics.ML\<close>
+ML_file \<open>Tools/mrbnf_lfp.ML\<close>
+ML_file \<open>Tools/mrbnf_fp.ML\<close>*)
+
+(*ML_file \<open>Tools/mrbnf_fp_tactics.ML\<close>
+ML_file \<open>Tools/mrbnf_fp.ML\<close>*)
+
+(*local_setup \<open>fn lthy =>
+let
+  val tau_pre = the (MRBNF_Def.mrbnf_of @{context} \<^type_name>\<open>\<tau>_pre\<close>)
+  val x = MRBNF_Fp.construct_binder_fp MRBNF_Util.Least_FP [(("tau", tau_pre), 2)] [[0]] lthy
+  val _ = @{print} x
+in
+  lthy
+end
+\<close>*)
 
 end

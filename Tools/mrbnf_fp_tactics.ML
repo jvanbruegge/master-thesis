@@ -1106,4 +1106,3 @@ fun mk_rrename_cong_id_tac FFVars_defs rrename_def Quotient_abs_rep Quotient_tot
     simp_only_plus ctxt assms [resolve_tac ctxt [ballI, alpha_refl], Goal.assume_rule_tac ctxt]];
 
 end;
-

@@ -150,8 +150,8 @@ fun define_raw_terms co names mrbnfs ks binding_relation lthy =
 
     (* Define co-datatype *)
     val lthy = (if co
-      then MRBNF_FP_Def_Sugar.co_datatypes Greatest_FP MRBNF_GFP.construct_gfp
-      else MRBNF_FP_Def_Sugar.co_datatypes Least_FP MRBNF_LFP.construct_lfp)
+      then BNF_FP_Def_Sugar.co_datatypes Greatest_FP BNF_GFP.construct_gfp
+      else BNF_FP_Def_Sugar.co_datatypes Least_FP BNF_LFP.construct_lfp)
         ((K false, false), T_specs) lthy;
     val T_sugars = map (the o BNF_FP_Def_Sugar.fp_sugar_of lthy) TNs;
   in

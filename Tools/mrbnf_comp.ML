@@ -150,7 +150,7 @@ fun add_mrbnf_to_unfolds mrbnf =
 
 val bdTN = "bdT";
 
-fun mk_killN n = "_kill" ^ string_of_int n;
+fun mk_demoteN n = "_demote" ^ string_of_int n;
 fun mk_liftN (n1, n2, n3) = "_lift" ^ string_of_int n1 ^ "_" ^ string_of_int n2 ^ "_" ^ string_of_int n3;
 fun mk_permuteN src dest =
   "_permute_" ^ implode (map string_of_int src) ^ "_" ^ implode (map string_of_int dest);
@@ -434,7 +434,7 @@ fun clean_compose_mrbnf const_policy qualify binding outer inners (unfold_set, l
      * \<forall>f1 ... fn v1 ... vm u1 ... ul. outer.map (inner_1.map f1 ... fn v1 ... vm u1 ... ul) ... (inner_m.map f1 ... fn v1 ... vm u1 ... ul) v1 ... vm u1 ... ul
      * Although in the example above the map function first takes all of the live variable functions, then all the bound variable function and
      * lastly the free variable functions, this does NOT have to be the case. Lives, bounds and frees can be interleaved in any order.
-     * Additionally, the inners are only instanciated as the live variables of the outer, so the map function retains the functions for bounds and frees *)
+     * Additionally, the inners are only instantiated as the live variables of the outer, so the map function retains the functions for bounds and frees *)
     val (mapx, map_lthy) =
       let
         (* Create new variables for the different variable kinds and give them the types:
@@ -507,6 +507,11 @@ fun clean_compose_mrbnf const_policy qualify binding outer inners (unfold_set, l
             (large outer) (map large inners) bd_ordIso_natLeq_thm_opt
         ) |> Thm.close_derivation \<^here>;
         val (zs, lthy') = mk_Frees "z" (Fs @ Bs) lthy
+
+        (*val _ = @{print} var_thm
+        val _ = @{print} (large outer, map large inners)
+        val _ = @{print} (qualify binding)
+        val _ = error "foo"*)
 
         fun mk_covar_thm (coclass, lthy) =
           let
@@ -703,7 +708,7 @@ fun raw_demote_mrbnf qualify targetTs mrbnf (accum as (unfold_set, lthy)) =
   if targetTs = var_types_of_mrbnf mrbnf then (mrbnf, accum) else
   let
     val n = 0
-    val b = Binding.suffix_name (mk_killN n) (name_of_mrbnf mrbnf);
+    val b = Binding.suffix_name (mk_demoteN n) (name_of_mrbnf mrbnf);
     val live = live_of_mrbnf mrbnf;
     val free = free_of_mrbnf mrbnf;
     val bound = bound_of_mrbnf mrbnf;
@@ -1108,7 +1113,7 @@ fun raw_lift_mrbnf qualify (n1, n2, n3) mrbnf (accum as (unfold_set, lthy)) =
       pred_set = pred_set_tac,
       wit = wit_tac
     };
-
+    
     val (mrbnf', lthy') =
       mrbnf_def Smart_Inline (K Dont_Note) true qualify tacs (SOME Ds) (mk_simple_class_opt mrbnf)
         Binding.empty Binding.empty Binding.empty []
@@ -1332,7 +1337,7 @@ fun seal_mrbnf qualify (unfold_set : unfold_set) b force_out_of_line Ds all_Ds m
     val repTA = mk_T_of_mrbnf Ds As Bs Fs mrbnf;
     val T_bind = qualify b;
     val repTA_tfrees = Term.add_tfreesT repTA [];
-    val all_TA_params_in_order = fold_rev Term.add_tfreesT all_Ds (interlace As' (map dest_TFree Bs) (map dest_TFree Fs) var_types);
+    val all_TA_params_in_order = fold_rev Term.add_tfreesT all_Ds As';
     val TA_params =
       (if force_out_of_line then all_TA_params_in_order
        else inter (op =) repTA_tfrees all_TA_params_in_order);
@@ -1573,7 +1578,7 @@ fun mrbnf_of_typ _ _ _ _ _ Ds0 var_types (T as TFree T') accum =
             val Ts' = map (nth Ts) (subtract (op =) (oDs_pos @ ofree_bound_pos) (0 upto length Ts - 1));
             val ((inners, (Dss, Ass)), (accum', lthy'')) =
               apfst (apsnd split_list o split_list) (@{fold_map 2}
-                (fn i => mrbnf_of_typ optim Smart_Inline (qualify i) flatten_tyargs Xs Ds0 var_types)
+                (fn i => mrbnf_of_typ optim const_policy (qualify i) flatten_tyargs Xs Ds0 var_types)
                 (if length Ts' = 1 then [0] else 1 upto length Ts') Ts' (x, lthy'));
           in
             compose_mrbnf const_policy qualify flatten_tyargs mrbnf inners oDs Dss oAs Ass (accum', lthy'')

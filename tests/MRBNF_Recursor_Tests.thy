@@ -122,6 +122,8 @@ ML_file \<open>../Tools/mrbnf_recursor.ML\<close>
 
 ML_file \<open>../Tools/mrbnf_vvsubst.ML\<close>
 
+ML \<open>Multithreading.parallel_proofs := 0\<close>
+
 local_setup \<open>fn lthy =>
 let
   val mrbnf = the (MRBNF_Def.mrbnf_of lthy "MRBNF_Recursor_Tests.test3_pre");
@@ -130,5 +132,7 @@ let
 in lthy end\<close>
 
 print_theorems
+
+thm exists_bij_betw
 
 end
